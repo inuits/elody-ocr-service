@@ -1,9 +1,9 @@
 ### Base stage
-FROM python:3.11-alpine AS base-stage
+FROM python:3.11-slim AS base-stage
 
 ENV FLASK_APP=app.py
 
-RUN apk update && apk add --no-cache libmagic1 tesseract-ocr tesseract-ocr-fra tesseract-ocr-nld && adduser --disabled-password --home /app --shell /bin/bash app
+RUN apt-get -y update && apt-get -y install libmagic1 tesseract-ocr tesseract-ocr-fra tesseract-ocr-nld && adduser --disabled-password --home /app --shell /bin/bash app
 USER app
 WORKDIR /app
 

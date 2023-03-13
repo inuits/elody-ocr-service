@@ -1,5 +1,5 @@
 import app
-from ocr_service import OcrService
+from services.ocr_service import OcrService
 
 
 def __is_malformed_message(data, fields, mimetypes):

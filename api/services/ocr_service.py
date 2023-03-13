@@ -1,11 +1,5 @@
-import app
-import os
-import pydub
-import requests
-import shutil
-import tempfile
 
-from converter import Converter
+import os
 from PIL import ExifTags, Image, ImageOps, TiffImagePlugin
 
 Image.MAX_IMAGE_PIXELS = None

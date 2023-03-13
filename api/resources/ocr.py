@@ -1,7 +1,11 @@
+import importlib
+
 import app
+import sys
 from flask import request, Response
 from flask_restful import abort, Resource
-from ocr_service import OcrService
+from services.ocr_service import OcrService
+
 
 class BaseOcr(Resource):
     def __get_request_body(self):
