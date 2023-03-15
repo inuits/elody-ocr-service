@@ -21,20 +21,16 @@ class StorageApiService(object):
             raise Exception(req.text.strip())
         return req
 
-    def upload_ocr(self, id_mediafile, file_in_bytes, mediafile_name):
-        metadata = [{"key": "publication_status", "value": "publiek"}]
-        self.headers["Content-Type"] = "application/pdf"
-        payload = {"metadata": metadata, "filename": mediafile_name}
 
+    def upload_ocr(self, ocr_output, id_mediafile, mediafile_name, content_type):
+        self.headers["Content-Type"] = content_type
         req = requests.post(
-            f"{self.storage_api_url}/upload?id={id_mediafile}",
-            data={
-                "body": file_in_bytes
-            },
-            json=payload,
+            f"{self.storage_api_url}/upload/{mediafile_name}?id={id_mediafile}",
+            data=ocr_output,
             headers=self.headers
         )
 
-        if req.status_code != 200:
+        if req.status_code != 201:
             raise Exception(req.text.strip())
         return req
+

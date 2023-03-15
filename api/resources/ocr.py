@@ -1,8 +1,5 @@
-import json
-import importlib
 import app
-import sys
-from io import BytesIO
+import os
 from flask import request, Response
 from flask_restful import abort, Resource
 from services.ocr_service import OcrService
@@ -10,6 +7,11 @@ from services.collection_api_service import CollectionApiService
 from services.storage_api_service import StorageApiService
 
 class BaseOcr(Resource):
+
+    def __init__(self):
+        self.headers = {"Authorization": f'Bearer {os.getenv("STATIC_JWT")}'}
+
+
     def __get_request_body(self):
         if request_body := request.get_json(silent=True):
             return request_body
@@ -20,8 +22,11 @@ class BaseOcr(Resource):
             abort(405, message=f"Malformed request body. Mandatory fieds: {[field for field in fields]}")
 
 
-    def get(self):
+    def post(self):
         # get content and validate
+        lang = request.args.get("lang")
+        if not lang:
+            lang = None
         content = self.__get_request_body()
         self.__is_malformed_message(content, ["mediafile_id", "operation"])
 
@@ -47,26 +52,34 @@ class BaseOcr(Resource):
         new_mediafile = response.json()
 
 
-        # new mediafile succesfully created -> run ocr job
-        lang = content.get("lang")
-        if not lang:
-            lang = None
 
+        # HERE YOU HAVE TO SEND A MESSAGE TO THE QUEUE
+        # body = {
+        #     "operation": content["operation"],
+        #     "mediafile_image_data": [mediafile_image_data],
+        #     "lang": lang
+        # }
+        # app.rabbit.send(body, routing_key="dams.ocr_request")
+
+
+
+
+        # THIS CODE SHOULD RUN IN / MOVE TO THE QUEUE
+        # new mediafile succesfully created -> run ocr job
         try:
-            file_in_bytes = ocr_service.ocr(content["operation"], [mediafile_image_data], lang)
+            ocr_output, mediafile_name, content_type, warning = ocr_service.ocr(content["operation"], [mediafile_image_data], lang)
         except Exception as ex:
             return Response(response=str(ex), status=400)
 
-
         # ocr job finished -> save ocr_image in storage api
         id_mediafile = new_mediafile["_id"].split("/")[1]
-        mediafile_name = mediafile_image_data.get("original_filename")
         try:
-            response = storage_api_service.upload_ocr(id_mediafile, file_in_bytes, mediafile_name)
+            storage_api_service.upload_ocr(ocr_output, id_mediafile, mediafile_name, content_type)
         except Exception as ex:
-            return Response(response=str(ex), status=402)
-
+            return Response(response=str(ex), status=400)
 
         # finally return the mediafile_id so user can fetch it themself
-        return Response(response=f"Ocr job finished. The mediafile is: [{id_mediafile}]/n {response}")
+        if warning:
+            self.headers["Warning"] = warning
+        return Response(response=f"Ocr job finished. The mediafile_ID is: [{id_mediafile}]", status=200, headers=self.headers)
 

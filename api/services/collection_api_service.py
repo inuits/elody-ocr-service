@@ -35,3 +35,4 @@ class CollectionApiService(object):
         if req.status_code != 201:
             raise Exception(req.text.strip())
         return req
+
