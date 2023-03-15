@@ -1,41 +1,39 @@
-
+from pathlib import Path
+from fpdf import FPDF
+from pypdf import PdfMerger
+from PIL import Image
+from humanfriendly import parse_size
+from flask import Response, make_response, send_file
+from flask_restful import Headers, abort
+import urllib.request
 import os
-from PIL import ExifTags, Image, ImageOps, TiffImagePlugin
+import pytesseract
+import mimetypes
+import magic
+from services.storage_api_service import StorageApiService
 
-Image.MAX_IMAGE_PIXELS = None
 
-# moet een SINGLETON zijn
-class OcrService:
-    def __init__(self, mediafile, url):
-        self.collection_api_url = os.getenv("COLLECTION_API_URL")
+
+CLIENT_PDF_FILENAME = "ocr-pdf"
+CLIENT_IMAGE_PATH = "/app/api/ocr-image"
+CLIENT_PDF_PATH = "/app/api/ocr-pdf"
+
+ALLOWED_MIMETYPES = ['image/png', 'image/jpg', 'image/jpeg', 'image/tiff', 'image/gif', 'image/webp']
+ALLOWED_LANGUAGES = ["eng", "nld", "fra"]
+
+
+class OcrService(object):
+    def __new__(cls):
+        if not hasattr(cls, 'instance'):
+            cls.instance = super(OcrService, cls).__new__(cls)
+        return cls.instance
+
+    def __init__(self):
         self.headers = {"Authorization": f'Bearer {os.getenv("STATIC_JWT")}'}
-        self.mediafile = mediafile
-        self.storage_api_url = os.getenv("STORAGE_API_URL")
-        self.url = url
-
-    def __get_exif_for_mediafile(self, mediafile):
-        raise NotImplementedError("not implemented")
-
-    def __get_file(self, output):
-        raise NotImplementedError("not implemented")
-
-    def __get_item_metadata_value(self, item, key):
-        raise NotImplementedError("not implemented")
+        self.storage_api_service = StorageApiService()
 
 
-    def __get_raw_id(self, item):
-        raise NotImplementedError("not implemented")
-
-
-    def __patch_mediafile(self, payload):
-        raise NotImplementedError("not implemented")
-
-
-    def __upload_ocr(self, file_name, file_bytes):
-        raise NotImplementedError("not implemented")
-
-
-    def ocr(self, operation, image_ids, language):
+    def ocr(self, operation, image_mediafiles_data, language):
         operations = {
             "txt": self.ocr_to_txt,
             "alto": self.ocr_to_alto,
@@ -45,14 +43,171 @@ class OcrService:
         if not func:
             raise Exception(f"Operation {operation} not supported")
 
-        func(image_ids, language)
+        return func(image_mediafiles_data, language)
 
 
-    def ocr_to_txt(self, image_id, language):
-        raise NotImplementedError("not implemented")
+    def ocr_to_txt(self, image_mediafiles_data, lang):
+        response = self.convert_image_to_data(method=pytesseract.image_to_string, mimetype="text/plain", image_mediafiles_data=image_mediafiles_data, lang=lang)
+        return response
 
-    def ocr_to_alto(self, image_id, language):
-        raise NotImplementedError("not implemented")
+    def ocr_to_alto(self, image_mediafiles_data, lang):
+        response = self.convert_image_to_data(method=pytesseract.image_to_alto_xml, mimetype="application/xml", image_mediafiles_data=image_mediafiles_data, lang=lang)
+        return response
 
-    def ocr_to_pdf(self, image_id, language):
-        raise NotImplementedError("not implemented")
+
+    def ocr_to_pdf(self, image_mediafiles_data, lang):
+        # get the diverted images if it exists, otherwise the originals
+        images = []
+        for i in range(len(image_mediafiles_data)):
+            images.append(image_mediafiles_data[i].get("transcode_filename"))
+            if not images[i]:
+                images.append(image_mediafiles_data[i].get("original_filename"))
+
+        # validate language
+        language, warning = self.validate_language(lang)
+
+        # merging
+        self.merge_searchable_pdfs(images, language)
+
+        # returning the pdf file
+        try:
+            return open(CLIENT_PDF_PATH, "rb")
+        except Exception as ex:
+            abort(400, message=str(ex))
+        finally:
+            Path(CLIENT_PDF_PATH).unlink()
+
+
+        # try:
+        #     response = make_response(send_file(CLIENT_PDF_PATH))
+        #     response.mimetype = "application/pdf"
+        #     if warning:
+        #         response.headers["Warning"] = warning
+        #     return response
+        #
+        # except FileNotFoundError:
+        #     abort(404, message="File not found")
+        # finally:
+        #     Path(CLIENT_PDF_PATH).unlink()
+
+
+
+    # helper method for text/alto
+    def convert_image_to_data(self, method, mimetype, image_mediafiles_data, lang):
+        # there should only be one image
+        if len(image_mediafiles_data) > 1:
+            abort(400, message="You can only send 1 image. Images received: " + str(len(image_mediafiles_data)))
+
+        # get the diverted image if it exists, otherwise the original
+        image_name = image_mediafiles_data[0].get("transcode_filename")
+        if not image_name:
+            image_name = image_mediafiles_data[0].get("original_filename")
+
+        # validate language & extension
+        language, warning = self.validate_language(lang)
+        if not self.is_mimetype_from_filename_valid(image_name):
+            abort(400, message="Extension is not valid")
+
+        # download image
+        try:
+            img_data = self.storage_api_service.download_image(image_name)
+        except Exception as ex:
+            abort(400, message=str(ex))
+
+        # save image on disk, run tesseract & delete image
+        with open(CLIENT_IMAGE_PATH, 'wb') as handler:
+            handler.write(img_data.content)
+        data = method(Image.open(CLIENT_IMAGE_PATH), lang=language)
+        Path(CLIENT_IMAGE_PATH).unlink()
+
+        headers = Headers()
+        if warning:
+            headers.add("Warning", warning)
+        return Response(data, status=200, headers=headers, mimetype=mimetype)
+
+
+    # image to searchable pdf
+    def create_searchable_pdfs(self, images, language):
+        pdfs = []
+        not_valid_counter = 0
+
+        for i in range(len(images)):
+            # check if the image isn't a none type
+            if not images[i]:
+                not_valid_counter += 1
+                continue
+
+            # check the extension of the image
+            if not self.is_mimetype_from_filename_valid(images[i]):
+                not_valid_counter += 1
+                continue
+
+            # download images
+            try:
+                img_data = self.storage_api_service.download_image(images[i])
+            except Exception as ex:
+                abort(400, message=str(ex))
+
+            # save image on disk, run tesseract & delete image
+            with open(CLIENT_IMAGE_PATH, 'wb') as handler:
+                handler.write(img_data.content)
+
+            # create the pdf
+            pdf = FPDF()
+            pdf.add_page()
+            pdf.set_font("helvetica", size=12)
+            pdf.output(CLIENT_PDF_FILENAME + str(i))
+
+            # add reference to list of pdfs
+            pdfs.append(CLIENT_PDF_PATH + str(i))
+            # create output and delete image
+            output = pytesseract.image_to_pdf_or_hocr(Image.open(CLIENT_IMAGE_PATH), lang=language, extension="pdf")
+            Path(CLIENT_IMAGE_PATH).unlink()
+            # add output to created pdf
+            with open(pdfs[i - not_valid_counter], "wb") as binary_pdf:
+                binary_pdf.write(output)
+
+        return pdfs
+
+    # main pdf method
+    def merge_searchable_pdfs(self, images, language):
+        # create seperate pdfs with references in list
+        pdfs = self.create_searchable_pdfs(images, language)
+        if len(pdfs) == 0:
+            abort(400, message="Extensions are not valid or file not found")
+
+        # create final pdf
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_font("helvetica", size=12)
+        pdf.output(CLIENT_PDF_FILENAME)
+
+        # merge seperate pdfs into final pdf
+        pdf_merger = PdfMerger()
+        for pdfUrl in pdfs:
+            pdf_merger.append(pdfUrl)
+        with Path(CLIENT_PDF_PATH).open(mode="wb") as output_file:
+            pdf_merger.write(output_file)
+
+        # cleanup: delete separate pdf's
+        for pdf in pdfs:
+            Path(pdf).unlink()
+
+
+    def get_file_mimetype(self, file):
+        file.seek(0)
+        mime = magic.Magic(mime=True).from_buffer(file.read(parse_size("8 KiB")))
+        return mime in ALLOWED_MIMETYPES
+
+    def is_mimetype_from_filename_valid(self, filename):
+        mime = mimetypes.guess_type(filename, False)[0]
+        return mime in ALLOWED_MIMETYPES
+
+    def validate_language(self, lang):
+        warning = None
+
+        if not lang or lang not in ALLOWED_LANGUAGES:
+            lang = ALLOWED_LANGUAGES[0] # set default to eng
+            warning = '299, "Arbitrary information that should be presented to a user or logged.", "For now the ocr tool used ENG as default language. You can specify the language with the key [lang] and possible values: eng, ned, fra'
+
+        return lang, warning

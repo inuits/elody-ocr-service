@@ -8,7 +8,7 @@ def __is_malformed_message(data, fields, mimetypes):
 
 @app.rabbit.queue("dams.file_uploaded")
 def __do_ocr(body, operation, error_message):
-    # eenmalige initialisatie van singleton ocr_engine
+    # eenmalige initialisatie van singleton ocr_service
     data = body["data"]
 
     try:
