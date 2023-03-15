@@ -34,7 +34,7 @@ class OcrService(object):
 
 
 
-    def ocr(self, operation, image_mediafiles_data, language):
+    def ocr(self, operation, mediafile_image_data, language):
         operations = {
             "txt": self.ocr_to_txt,
             "alto": self.ocr_to_alto,
@@ -44,35 +44,32 @@ class OcrService(object):
         if not func:
             raise Exception(f"Operation {operation} not supported")
 
-        return func(image_mediafiles_data, language)
+        return func(mediafile_image_data, language)
 
 
-    def ocr_to_txt(self, image_mediafiles_data, lang):
-        response = self.convert_image_to_data(method=pytesseract.image_to_string, ext=".txt", mimetype="text/plain", image_mediafiles_data=image_mediafiles_data, lang=lang)
+    def ocr_to_txt(self, mediafile_image_data, lang):
+        response = self.convert_image_to_data(method=pytesseract.image_to_string, ext=".txt", mimetype="text/plain", mediafile_image_data=mediafile_image_data, lang=lang)
         return response
 
 
-    def ocr_to_alto(self, image_mediafiles_data, lang):
-        response = self.convert_image_to_data(method=pytesseract.image_to_alto_xml, ext=".xml", mimetype="application/xml", image_mediafiles_data=image_mediafiles_data, lang=lang)
+    def ocr_to_alto(self, mediafile_image_data, lang):
+        response = self.convert_image_to_data(method=pytesseract.image_to_alto_xml, ext=".xml", mimetype="application/xml", mediafile_image_data=mediafile_image_data, lang=lang)
         return response
 
 
-    def ocr_to_pdf(self, image_mediafiles_data, lang):
+    def ocr_to_pdf(self, mediafile_image_data, lang):
         # get the diverted images if it exists, otherwise the originals
         images = []
-        for i in range(len(image_mediafiles_data)):
-            images.append(image_mediafiles_data[i].get("filename"))
-
-        # validate language
-        language, warning = self.validate_language(lang)
+        for i in range(len(mediafile_image_data)):
+            images.append(mediafile_image_data[i].get("filename"))
 
         # merging
-        self.merge_searchable_pdfs(images, language)
+        self.merge_searchable_pdfs(images, lang)
 
         # returning the pdf file
-        mediafile_name = image_mediafiles_data[0].get("original_filename").split(".")[0] + ".pdf"
+        mediafile_name = mediafile_image_data[0].get("original_filename").split(".")[0] + ".pdf"
         try:
-            return open(CLIENT_PDF_PATH, "rb"), mediafile_name, "application/pdf", warning
+            return open(CLIENT_PDF_PATH, "rb"), mediafile_name, "application/pdf"
         except Exception as ex:
             abort(400, message=str(ex))
         finally:
@@ -81,16 +78,15 @@ class OcrService(object):
 
 
     # helper method for text/alto
-    def convert_image_to_data(self, method, ext, mimetype, image_mediafiles_data, lang):
+    def convert_image_to_data(self, method, ext, mimetype, mediafile_image_data, lang):
         # there should only be one image
-        if len(image_mediafiles_data) > 1:
-            abort(400, message="You can only send 1 image. Images received: " + str(len(image_mediafiles_data)))
+        if len(mediafile_image_data) > 1:
+            abort(400, message="You can only send 1 image. Images received: " + str(len(mediafile_image_data)))
 
         # get the diverted image if it exists, otherwise the original
-        image_name = image_mediafiles_data[0].get("filename")
+        image_name = mediafile_image_data[0].get("filename")
 
-        # validate language & extension
-        language, warning = self.validate_language(lang)
+        # validate extension
         if not self.is_mimetype_from_filename_valid(image_name):
             abort(400, message="Extension is not valid")
 
@@ -103,13 +99,13 @@ class OcrService(object):
         # save image on disk, run tesseract & delete image
         with open(CLIENT_IMAGE_PATH, 'wb') as handler:
             handler.write(img_data.content)
-        data = method(Image.open(CLIENT_IMAGE_PATH), lang=language)
+        data = method(Image.open(CLIENT_IMAGE_PATH), lang=lang)
         Path(CLIENT_IMAGE_PATH).unlink()
 
-        mediafile_name = image_mediafiles_data[0].get("original_filename").split(".")[0] + ext
+        mediafile_name = mediafile_image_data[0].get("original_filename").split(".")[0] + ext
         if ext == ".txt":
             data = data.encode("utf-8")
-        return data, mediafile_name, mimetype, warning
+        return data, mediafile_name, mimetype
 
 
     def create_searchable_pdfs(self, images, language):
@@ -190,12 +186,3 @@ class OcrService(object):
         mime = mimetypes.guess_type(filename, False)[0]
         return mime in ALLOWED_MIMETYPES
 
-
-    def validate_language(self, lang):
-        warning = None
-
-        if not lang or lang not in ALLOWED_LANGUAGES:
-            lang = ALLOWED_LANGUAGES[0] # set default to eng
-            warning = '299, "Arbitrary information that should be presented to a user or logged.", "For now the ocr tool used ENG as default language. You can specify the language with the key [lang] and possible values: eng, ned, fra'
-
-        return lang, warning

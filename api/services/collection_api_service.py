@@ -21,7 +21,7 @@ class CollectionApiService(object):
         return req
 
     def create_mediafile(self, mediafile, operation):
-        filename = mediafile["original_filename"].split(".")[0] + f"-ocr.{operation}"
+        filename = mediafile[0]["original_filename"].split(".")[0] + f"-ocr.{operation}"
         data = {
             "filename": filename
         }
