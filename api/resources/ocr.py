@@ -1,17 +1,23 @@
+import array
+
 import app
 import os
+import mimetypes
+
+import numpy as np
 from flask import request, Response
 from flask_restful import abort, Resource
-from services.ocr_service import OcrService
 from services.collection_api_service import CollectionApiService
-from services.storage_api_service import StorageApiService
 
 ALLOWED_LANGUAGES = ["eng", "nld", "fra"]
+ALLOWED_MIMETYPES = ['image/png', 'image/jpg', 'image/jpeg', 'image/tiff', 'image/gif', 'image/webp']
+
 
 class BaseOcr(Resource):
 
     def __init__(self):
         self.headers = {"Authorization": f'Bearer {os.getenv("STATIC_JWT")}'}
+        self.collection_api_service = CollectionApiService()
 
 
     def __get_request_body(self):
@@ -19,19 +25,29 @@ class BaseOcr(Resource):
             return request_body
         abort(405, message="Invalid input")
 
+
     def __is_malformed_message(self, data, fields):
         if not all(x in data for x in fields):
             abort(405, message=f"Malformed request body. Mandatory fieds: {[field for field in fields]}")
 
-    def __validate_number_of_ids(self, data, operation):
-        if len(data) < 1:
+
+    def __is_wrong_operation(self, operation):
+        if operation not in ["txt", "alto", "pdf"]:
+            abort(405, message="Invalid operation. Possible operations are ['txt', 'alto', 'pdf']")
+
+
+    def __validate_mediafiles(self, mediafile_ids, operation):
+        if not isinstance(mediafile_ids, list):
+            abort(400, message="Malformed request body. Send the image id(s) in an array")
+        if len(mediafile_ids) < 1:
             abort(400, message="Malformed request body. You forgot to give a mediafile id")
-        if len(data) > 1 and operation != "pdf":
-            abort(400, message=f"You can only send 1 image for txt of alto. Images received: {str(len(data))}")
-        for id in data:
+        if len(mediafile_ids) > 1 and operation != "pdf":
+            abort(400, message=f"You can only send 1 image id for the [{operation}] operation. Images received: {str(len(mediafile_ids))}")
+        for id in mediafile_ids:
             if id  == "":
                 abort(400, message="Malformed request body. You cannot give an empty mediafile id")
-        return len(data)
+        return len(mediafile_ids)
+
 
     def __validate_language(self, lang):
         warning = None
@@ -43,30 +59,40 @@ class BaseOcr(Resource):
         return lang, warning
 
 
+    def __is_mimetype_from_filename_valid(self, filename):
+        mime = mimetypes.guess_type(filename, False)[0]
+        return mime in ALLOWED_MIMETYPES
+
+
+    def __get_imagename_and_validate(self, mediafile_image_data):
+        # get the diverted image if it exists, otherwise the original
+        image_name = mediafile_image_data[0].get("filename")
+
+        # validate extension
+        if not self.__is_mimetype_from_filename_valid(image_name):
+            abort(400, message="Extension is not valid")
+        return image_name
+
+
+
     def post(self):
-        # get content and validate
+        # get data
         content = self.__get_request_body()
-        self.__is_malformed_message(content, ["mediafile_id", "operation"])
-
-        # validate language
-        lang, warning = self.__validate_language(request.args.get("lang"))
-
-        # validate count
         operation = content["operation"]
         mediafile_id = content["mediafile_id"]
-        count = self.__validate_number_of_ids(mediafile_id, operation)
 
-        # initialize api's
-        collection_api_service = CollectionApiService()
-        storage_api_service = StorageApiService()
-        ocr_service = OcrService()
+        # validation
+        self.__is_malformed_message(content, ["mediafile_id", "operation"])
+        self.__is_wrong_operation(operation)
+        lang, warning = self.__validate_language(request.args.get("lang"))
+        count = self.__validate_mediafiles(mediafile_id, operation)
 
 
         # get mediafile and see if it exists
         try:
             mediafile_image_data = []
             for i in range(count):
-                response = collection_api_service.get_mediafile(mediafile_id[i])
+                response = self.collection_api_service.get_mediafile(mediafile_id[i])
                 mediafile_image_data.append(response.json())
         except Exception as ex: # it doesn't exist
             return Response(response=str(ex), status=400)
@@ -74,31 +100,34 @@ class BaseOcr(Resource):
 
         # it exists -> create new mediafile for ocr image
         try:
-            response = collection_api_service.create_mediafile(mediafile_image_data, operation)
+            response = self.collection_api_service.create_mediafile(mediafile_image_data, operation)
         except Exception as ex:
-            return Response(response=str(ex), status=401)
+            return Response(response=str(ex), status=400)
         new_mediafile = response.json()
-
-
-
-        # THIS CODE SHOULD RUN IN / MOVE TO THE QUEUE
-        # new mediafile succesfully created -> run ocr job
-        try:
-            ocr_output, mediafile_name, content_type = ocr_service.ocr(operation, mediafile_image_data, lang)
-        except Exception as ex:
-            return Response(response=str(ex), status=400)
-
-
-        # ocr job finished -> save ocr_image in storage api
         id_new_mediafile = new_mediafile["_id"].split("/")[1]
+
+
+        # other validation
+        image_name = self.__get_imagename_and_validate(mediafile_image_data)
+
+
+        # put message on queue
+        body = {
+            "operation": content["operation"],
+            "mediafile_image_data": mediafile_image_data,
+            "lang": lang,
+            "id_new_mediafile": id_new_mediafile,
+            "image_name": image_name
+        }
         try:
-            storage_api_service.upload_ocr(ocr_output, id_new_mediafile, mediafile_name, content_type)
+            app.logger.info("Going to send message to queue")
+            app.rabbit.send(body, routing_key="dams.ocr_request")
         except Exception as ex:
-            return Response(response=str(ex), status=400)
+            abort(400, f"Exception at queue: {str(ex)}")
 
 
-        # finally return the mediafile_id so user can fetch it themself
+        # end call
         if warning:
             self.headers["Warning"] = warning
-        return Response(response=f"Ocr job finished. The mediafile_ID is: [{id_new_mediafile}]", status=200, headers=self.headers)
+        return Response(response=f"Ocr job is put on queue. Fetch it later with the mediafile id: [{id_new_mediafile}]", status=200, headers=self.headers)
 
