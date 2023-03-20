@@ -4,9 +4,9 @@ from flask_restful import Resource
 
 class OpenAPISpec(Resource):
     def get(self):
-        return send_from_directory("docs", "dams-transcode-service.json")
+        return send_from_directory("docs", "inuits-dams-ocr-service.json")
 
 
 class AsyncAPISpec(Resource):
     def get(self):
-        return send_from_directory("docs", "dams-transcode-service-events.html")
+        return send_from_directory("docs", "inuits-dams-ocr-service-events.html")

@@ -1,9 +1,10 @@
 import os
 import requests
 
+
 class CollectionApiService(object):
     def __new__(cls):
-        if not hasattr(cls, 'instance'):
+        if not hasattr(cls, "instance"):
             cls.instance = super(CollectionApiService, cls).__new__(cls)
         return cls.instance
 
@@ -22,9 +23,7 @@ class CollectionApiService(object):
 
     def create_mediafile(self, mediafile, operation):
         filename = mediafile[0]["original_filename"].split(".")[0] + f"-ocr.{operation}"
-        data = {
-            "filename": filename
-        }
+        data = {"filename": filename}
 
         req = requests.post(
             f"{self.collection_api_url}/mediafiles",
@@ -35,4 +34,3 @@ class CollectionApiService(object):
         if req.status_code != 201:
             raise Exception(req.text.strip())
         return req
-

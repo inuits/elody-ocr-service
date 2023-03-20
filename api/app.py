@@ -75,11 +75,8 @@ if os.getenv("HEALTH_CHECK_EXTERNAL_SERVICES", True) in ["True", "true", True]:
 app.add_url_rule("/health", "healthcheck", view_func=lambda: health.run())
 
 
-from resources.ocr import (
-    BaseOcr
-)
+from resources.ocr import BaseOcr
 import resources.queues
-
 
 
 api.add_resource(BaseOcr, "/ocr")
