@@ -1,6 +1,6 @@
 import os
 import requests
-
+import app
 
 class CollectionApiService(object):
     def __new__(cls):
@@ -31,6 +31,16 @@ class CollectionApiService(object):
             headers=self.headers,
         )
 
+        if req.status_code != 201:
+            raise Exception(req.text.strip())
+        return req
+
+    def add_ocr_output_to_metadata(self, mediafile_id, mediafile_data):
+        req = requests.put(
+            f"{self.collection_api_url}/mediafiles/{mediafile_id}",
+            json=mediafile_data,
+            headers=self.headers,
+        )
         if req.status_code != 201:
             raise Exception(req.text.strip())
         return req

@@ -9,6 +9,7 @@ import os
 import pytesseract
 import magic
 from services.storage_api_service import StorageApiService
+from services.collection_api_service import CollectionApiService
 
 
 CLIENT_PDF_FILENAME = "ocr-pdf"
@@ -25,6 +26,7 @@ class OcrService(object):
     def __init__(self):
         self.headers = {"Authorization": f'Bearer {os.getenv("STATIC_JWT")}'}
         self.storage_api_service = StorageApiService()
+        self.collection_api_service = CollectionApiService()
 
     def __run_tesseract(self, method, path, image_data, lang):
         with open(path, "wb") as handler:
@@ -41,6 +43,21 @@ class OcrService(object):
             pdf.output(CLIENT_PDF_FILENAME + str(i))
         else:
             pdf.output(CLIENT_PDF_FILENAME)
+
+    def __add_txt_to_metadata(self, mediafile_image_data, ocr_output):
+        try:
+            metadata = {
+                "key": "text_from_ocr",
+                "value": ocr_output
+            }
+
+            mediafile_image_data.get("metadata").append(metadata)
+            self.collection_api_service.add_ocr_output_to_metadata(mediafile_image_data.get("_key"),
+                                                                   mediafile_image_data)
+        except Exception as ex:
+            app.logger.error(
+                f'"The ocr function failed during update of metadata:" {ex}'
+            )
 
     def ocr(self, operation, mediafile_image_data, lang, image_name):
         operations = {
@@ -102,11 +119,12 @@ class OcrService(object):
                 f'"The ocr function failed during downloading the image in the storage api:" {ex}'
             )
         data = self.__run_tesseract(method, CLIENT_IMAGE_PATH, img_data, lang)
-
         mediafile_name = (
             mediafile_image_data[0].get("original_filename").split(".")[0] + ext
         )
+
         if ext == ".txt":
+            self.__add_txt_to_metadata(mediafile_image_data[0], data)
             data = data.encode("utf-8")
         return data, mediafile_name, mimetype
 
