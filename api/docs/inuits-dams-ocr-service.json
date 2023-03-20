@@ -1,0 +1,117 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Inuits DAMS ocr service API",
+    "description": "An API to ocr images into txt, alto and pdf",
+    "contact": {
+      "email": "developers@inuits.eu"
+    },
+    "version": "0.0.1"
+  },
+  "externalDocs": {
+    "description": "Find out more about DAMS",
+    "url": "https://docs.inuits.io/dams/ocr-service"
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "tags": [
+    {
+      "name": "orc",
+      "description": "ocr images into txt, alto or pdf in DAMS"
+    }
+  ],
+  "paths": {
+    "/ocr": {
+      "post": {
+        "tags": [
+          "ocr"
+        ],
+        "summary": "Start ocr job",
+        "operationId": "startOcr",
+        "parameters": [
+          {
+            "name": "language",
+            "in": "query",
+            "description": "Give the language in which the image should be ocred. Possible languages: ['eng', 'nld', 'fra']",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": ""
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Details needed to run an ocr job",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ocr"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ocr"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "malformed request body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ocr"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ocr"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+"components": {
+    "schemas": {
+      "ocr": {
+        "type": "object",
+        "description": "Necessary ocr information",
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "mediafile_id": {
+            "type": "array",
+            "description": "mediafile id",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "operation": {
+            "type": "string",
+            "description": "operation: ['txt', 'alto', 'pdf']"
+          }
+        }
+      }
+    }
+  }
+}

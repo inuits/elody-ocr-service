@@ -2,6 +2,7 @@ import os
 import requests
 import app
 
+
 class CollectionApiService(object):
     def __new__(cls):
         if not hasattr(cls, "instance"):

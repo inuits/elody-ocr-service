@@ -46,14 +46,12 @@ class OcrService(object):
 
     def __add_txt_to_metadata(self, mediafile_image_data, ocr_output):
         try:
-            metadata = {
-                "key": "text_from_ocr",
-                "value": ocr_output
-            }
+            metadata = {"key": "text_from_ocr", "value": ocr_output}
 
             mediafile_image_data.get("metadata").append(metadata)
-            self.collection_api_service.add_ocr_output_to_metadata(mediafile_image_data.get("_key"),
-                                                                   mediafile_image_data)
+            self.collection_api_service.add_ocr_output_to_metadata(
+                mediafile_image_data.get("_key"), mediafile_image_data
+            )
         except Exception as ex:
             app.logger.error(
                 f'"The ocr function failed during update of metadata:" {ex}'

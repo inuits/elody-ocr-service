@@ -20,7 +20,7 @@ if os.getenv("SENTRY_ENABLED", False) in ["True", "true", True]:
     )
 
 SWAGGER_URL = "/api/docs"  # URL for exposing Swagger UI (without trailing '/')
-API_URL = "/spec/dams-transcode-service.json"  # Our API url (can of course be a local resource)
+API_URL = "/spec/inuits-dams-ocr-service.json"  # Our API url (can of course be a local resource)
 
 swaggerui_blueprint = get_swaggerui_blueprint(SWAGGER_URL, API_URL)
 
@@ -77,9 +77,10 @@ app.add_url_rule("/health", "healthcheck", view_func=lambda: health.run())
 
 from resources.ocr import BaseOcr
 import resources.queues
-
+from resources.spec import OpenAPISpec
 
 api.add_resource(BaseOcr, "/ocr")
+api.add_resource(OpenAPISpec, "/spec/inuits-dams-ocr-service.json")
 
 if __name__ == "__main__":
     app.run(debug=True)
