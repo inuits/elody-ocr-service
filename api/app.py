@@ -61,13 +61,10 @@ validator = JWTValidator(
     os.getenv("REMOTE_PUBLIC_KEY", False),
 )
 require_oauth.register_token_validator(validator)
-
 app.register_blueprint(swaggerui_blueprint)
-
 
 def rabbit_available():
     return True, rabbit.get_connection().is_open
-
 
 health = HealthCheck()
 if os.getenv("HEALTH_CHECK_EXTERNAL_SERVICES", True) in ["True", "true", True]:
@@ -76,10 +73,12 @@ app.add_url_rule("/health", "healthcheck", view_func=lambda: health.run())
 
 
 from resources.ocr import BaseOcr
+from resources.status import BaseStatus
 import resources.queues
 from resources.spec import OpenAPISpec
 
 api.add_resource(BaseOcr, "/ocr")
+api.add_resource(BaseStatus, "/status")
 api.add_resource(OpenAPISpec, "/spec/inuits-dams-ocr-service.json")
 
 if __name__ == "__main__":
