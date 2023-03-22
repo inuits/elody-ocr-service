@@ -16,7 +16,7 @@ ALLOWED_MIMETYPES = [
 ]
 
 
-class BaseOcr(Resource):
+class Ocr(Resource):
     def __init__(self):
         self.headers = {"Authorization": f'Bearer {os.getenv("STATIC_JWT")}'}
         self.collection_api_service = CollectionApiService()

@@ -66,19 +66,24 @@ app.register_blueprint(swaggerui_blueprint)
 def rabbit_available():
     return True, rabbit.get_connection().is_open
 
+def tesseract_available():
+    available = os.popen("tesseract -v && echo $?").readlines()[-1][0] == "0"
+    return available, available
+
 health = HealthCheck()
 if os.getenv("HEALTH_CHECK_EXTERNAL_SERVICES", True) in ["True", "true", True]:
     health.add_check(rabbit_available)
+    health.add_check(tesseract_available)
 app.add_url_rule("/health", "healthcheck", view_func=lambda: health.run())
 
 
-from resources.ocr import BaseOcr
-from resources.status import BaseStatus
+from resources.ocr import Ocr
+from resources.status import Status
 import resources.queues
 from resources.spec import OpenAPISpec
 
-api.add_resource(BaseOcr, "/ocr")
-api.add_resource(BaseStatus, "/status")
+api.add_resource(Ocr, "/ocr")
+api.add_resource(Status, "/status")
 api.add_resource(OpenAPISpec, "/spec/inuits-dams-ocr-service.json")
 
 if __name__ == "__main__":
