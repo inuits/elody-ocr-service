@@ -5,3 +5,4 @@ from unittest.mock import patch, MagicMock
 
 @patch("app.rabbit", new=MagicMock())
 class OcrTxtTest(BaseCase):
+    raise NotImplementedError()

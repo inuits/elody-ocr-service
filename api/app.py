@@ -7,6 +7,7 @@ from flask_restful import Api
 from flask_swagger_ui import get_swaggerui_blueprint
 from healthcheck import HealthCheck
 from inuits_jwt_auth.authorization import JWTValidator, MyResourceProtector
+from job_helper.job_extension import JobExtension
 from rabbitmq_pika_flask import RabbitMQ
 
 if os.getenv("SENTRY_ENABLED", False) in ["True", "true", True]:
@@ -46,6 +47,8 @@ logger = logging.getLogger(__name__)
 rabbit = RabbitMQ()
 rabbit.init_app(app, "basic", json.loads, json.dumps)
 
+jobs_extension = JobExtension(rabbit)
+
 require_oauth = MyResourceProtector(
     logger,
     os.getenv("REQUIRE_TOKEN", True) in ["True", "true", True],
@@ -63,12 +66,15 @@ validator = JWTValidator(
 require_oauth.register_token_validator(validator)
 app.register_blueprint(swaggerui_blueprint)
 
+
 def rabbit_available():
     return True, rabbit.get_connection().is_open
+
 
 def tesseract_available():
     available = os.popen("tesseract -v && echo $?").readlines()[-1][0] == "0"
     return available, available
+
 
 health = HealthCheck()
 if os.getenv("HEALTH_CHECK_EXTERNAL_SERVICES", True) in ["True", "true", True]:
