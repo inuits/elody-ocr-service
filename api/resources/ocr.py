@@ -130,6 +130,7 @@ class Ocr(Resource):
             response=f"Ocr job is put on queue. Fetch it later with the mediafile id: [{id_new_mediafile}]",
             status=200,
             headers=self.headers,
+            mimetype="text/plain"
         )
 
     def post(self):
@@ -139,10 +140,11 @@ class Ocr(Resource):
         # )
 
         content = self.__get_request_body()
+        self.__is_malformed_message(content, ["mediafile_id", "operation"])
+
         operation = content["operation"]
         mediafile_id = content["mediafile_id"]
 
-        self.__is_malformed_message(content, ["mediafile_id", "operation"])
         self.__is_wrong_operation(operation)
         lang, warning = self.__validate_language(request.args.get("lang"))
         count = self.__validate_mediafiles(mediafile_id, operation)

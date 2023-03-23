@@ -11,5 +11,5 @@ class Status(Resource):
     def get(self):
         tesseract = os.popen("tesseract -v").read().split("\n")[0]
         pytesseract = pkg_resources.working_set.by_key["pytesseract"].version
-        output = f"{tesseract} available\npytesseract {pytesseract} available\n"
-        return Response(response=output, status=200)
+        output = f"{tesseract} available\npytesseract {pytesseract} available"
+        return Response(response=output, status=200, mimetype="text/plain")
