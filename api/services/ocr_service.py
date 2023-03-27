@@ -48,15 +48,8 @@ class OcrService(object):
         try:
             metadata = {"key": "text_from_ocr", "value": ocr_output}
             mediafile_image_data.get("metadata").append(metadata)
-
-            # the beginning of the url is concatenated to the already present one -> delete the beginning so the url still works after upload
-            original_url = mediafile_image_data.get("original_file_location")
-            mediafile_image_data["original_file_location"] = original_url.split(urlparse(original_url).netloc)[1]
-            thumbnail_url = mediafile_image_data.get("thumbnail_file_location")
-            mediafile_image_data["thumbnail_file_location"] = thumbnail_url.split(urlparse(original_url).netloc)[1]
-
             self.collection_api_service.add_ocr_output_to_metadata(
-                mediafile_image_data.get("_key"), mediafile_image_data
+                mediafile_image_data.get("_key"), {"metadata": mediafile_image_data.get("metadata")}
             )
         except Exception as ex:
             app.logger.error(

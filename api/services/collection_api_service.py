@@ -36,10 +36,11 @@ class CollectionApiService(object):
             raise Exception(req.text.strip())
         return req
 
-    def add_ocr_output_to_metadata(self, mediafile_id, mediafile_image_data):
-        req = requests.put(
+    def add_ocr_output_to_metadata(self, mediafile_id, metadata):
+        app.logger.info("Storing the metadata in the original image file")
+        req = requests.patch(
             f"{self.collection_api_url}/mediafiles/{mediafile_id}",
-            json=mediafile_image_data,
+            json=metadata,
             headers=self.headers,
         )
         if req.status_code != 201:
