@@ -12,10 +12,9 @@ from services.storage_api_service import StorageApiService
 from services.collection_api_service import CollectionApiService
 
 
-CLIENT_PDF_FILENAME = "ocr-pdf"
-CLIENT_IMAGE_PATH = "/app/api/ocr-image"
-CLIENT_PDF_PATH = "/app/api/ocr-pdf"
-
+CLIENT_PDF_FILENAME=str(os.getenv("CLIENT_PDF_FILENAME", False))
+CLIENT_IMAGE_PATH=str(os.getenv("CLIENT_IMAGE_PATH", False))
+CLIENT_PDF_PATH=str(os.getenv("CLIENT_PDF_PATH", False))
 
 class OcrService(object):
     def __new__(cls):
