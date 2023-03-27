@@ -17,19 +17,13 @@
       "url": "/"
     }
   ],
-  "tags": [
-    {
-      "name": "orc",
-      "description": "ocr images into txt, alto or pdf in DAMS"
-    }
-  ],
   "paths": {
     "/ocr": {
       "post": {
         "tags": [
           "ocr"
         ],
-        "summary": "Start ocr job",
+        "summary": "Ocr images into txt, alto or pdf in DAMS",
         "operationId": "startOcr",
         "parameters": [
           {
@@ -87,9 +81,26 @@
           }
         }
       }
+    },
+    "/status": {
+      "get": {
+        "tags": [
+          "status"
+        ],
+        "summary": "Get status of tesseract & pytesseract",
+        "operationId": "getStatus",
+        "responses": {
+          "200": {
+            "description": "successful operation"
+          },
+          "400": {
+            "description": "something went wrong"
+          }
+        }
+      }
     }
   },
-"components": {
+  "components": {
     "schemas": {
       "ocr": {
         "type": "object",
