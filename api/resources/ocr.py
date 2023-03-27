@@ -111,7 +111,11 @@ class Ocr(Resource):
             # app.jobs_extension.fail_job(self.main_job, str(ex))
             abort(400, message=str(ex))
         new_mediafile = response.json()
-        return new_mediafile["_id"].split("/")[1]
+
+        id = new_mediafile["_id"]
+        if "/" in id:
+            id = id.split("/")[1]
+        return id
 
     def __send_message_to_queue_and_terminate_call(
         self, body, id_new_mediafile, warning
