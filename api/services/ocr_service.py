@@ -13,9 +13,10 @@ from services.storage_api_service import StorageApiService
 from services.collection_api_service import CollectionApiService
 
 
-CLIENT_PDF_FILENAME=str(os.getenv("CLIENT_PDF_FILENAME", False))
-CLIENT_IMAGE_PATH=str(os.getenv("CLIENT_IMAGE_PATH", False))
-CLIENT_PDF_PATH=str(os.getenv("CLIENT_PDF_PATH", False))
+CLIENT_PDF_FILENAME = str(os.getenv("CLIENT_PDF_FILENAME", False))
+CLIENT_IMAGE_PATH = str(os.getenv("CLIENT_IMAGE_PATH", False))
+CLIENT_PDF_PATH = str(os.getenv("CLIENT_PDF_PATH", False))
+
 
 class OcrService(object):
     def __new__(cls):
@@ -49,26 +50,24 @@ class OcrService(object):
             metadata = {"key": "text_from_ocr", "value": ocr_output}
             mediafile_image_data.get("metadata").append(metadata)
             self.collection_api_service.add_ocr_output_to_metadata(
-                mediafile_image_data.get("_key"), {"metadata": mediafile_image_data.get("metadata")}
+                mediafile_image_data.get("_key"),
+                {"metadata": mediafile_image_data.get("metadata")},
             )
         except Exception as ex:
             app.logger.error(
                 f'"The ocr function failed during update of metadata:" {ex}'
             )
 
-    def ocr(self, operation, mediafile_image_data, lang, image_name):
+    def ocr(self, operation, mediafile_image_data, lang, image_name, id_new_mediafile):
         operations = {
             "txt": self.ocr_to_txt,
             "alto": self.ocr_to_alto,
             "pdf": self.ocr_to_pdf,
         }
         func = operations.get(operation)
-        if not func:
-            raise Exception(f"Operation {operation} not supported")
+        return func(mediafile_image_data, lang, image_name, id_new_mediafile)
 
-        return func(mediafile_image_data, lang, image_name)
-
-    def ocr_to_txt(self, mediafile_image_data, lang, image_name):
+    def ocr_to_txt(self, mediafile_image_data, lang, image_name, id_new_mediafile):
         response = self.convert_image_to_data(
             method=pytesseract.image_to_string,
             ext=".txt",
@@ -76,10 +75,11 @@ class OcrService(object):
             mediafile_image_data=mediafile_image_data,
             lang=lang,
             image_name=image_name,
+            id_new_mediafile=id_new_mediafile,
         )
         return response
 
-    def ocr_to_alto(self, mediafile_image_data, lang, image_name):
+    def ocr_to_alto(self, mediafile_image_data, lang, image_name, id_new_mediafile):
         response = self.convert_image_to_data(
             method=pytesseract.image_to_alto_xml,
             ext=".xml",
@@ -87,14 +87,15 @@ class OcrService(object):
             mediafile_image_data=mediafile_image_data,
             lang=lang,
             image_name=image_name,
+            id_new_mediafile=id_new_mediafile,
         )
         return response
 
-    def ocr_to_pdf(self, mediafile_image_data, lang, image_name):
+    def ocr_to_pdf(self, mediafile_image_data, lang, image_name, id_new_mediafile):
         images = []
         for i in range(len(mediafile_image_data)):
             images.append(mediafile_image_data[i].get("filename"))
-        self.merge_searchable_pdfs(images, lang)
+        self.merge_searchable_pdfs(images, lang, id_new_mediafile)
         mediafile_name = (
             mediafile_image_data[0].get("original_filename").split(".")[0] + ".pdf"
         )
@@ -102,23 +103,41 @@ class OcrService(object):
         try:
             return open(CLIENT_PDF_PATH, "rb"), mediafile_name, "application/pdf"
         except Exception as ex:
+            self.collection_api_service.delete_mediafile(id_new_mediafile)
+            app.logger.info("The created mediafile is deleted due to an error:")
             app.logger.error(f'"In ocr_service - The ocr function failed with:" {ex}')
         finally:
             Path(CLIENT_PDF_PATH).unlink()
 
     def convert_image_to_data(
-        self, method, ext, mimetype, mediafile_image_data, lang, image_name
+        self,
+        method,
+        ext,
+        mimetype,
+        mediafile_image_data,
+        lang,
+        image_name,
+        id_new_mediafile,
     ):
         try:
             img_data = self.storage_api_service.download_image(image_name)
         except Exception as ex:
+            self.collection_api_service.delete_mediafile(id_new_mediafile)
+            app.logger.info("The created mediafile is deleted due to an error:")
             app.logger.error(
                 f'"The ocr function failed during downloading the image in the storage api:" {ex}'
             )
-        data = self.__run_tesseract(method, CLIENT_IMAGE_PATH, img_data, lang)
-        mediafile_name = (
-            mediafile_image_data[0].get("original_filename").split(".")[0] + ext
-        )
+        try:
+            data = self.__run_tesseract(method, CLIENT_IMAGE_PATH, img_data, lang)
+            mediafile_name = (
+                mediafile_image_data[0].get("original_filename").split(".")[0] + ext
+            )
+        except Exception as ex:
+            self.collection_api_service.delete_mediafile(id_new_mediafile)
+            app.logger.info("The created mediafile is deleted due to an error:")
+            app.logger.error(
+                f"The ocr function failed during running tesseract en getting the filename: {ex}"
+            )
 
         if ext == ".txt":
             self.__add_txt_to_metadata(mediafile_image_data[0], data)
@@ -126,7 +145,7 @@ class OcrService(object):
 
         return data, mediafile_name, mimetype
 
-    def create_searchable_pdfs(self, images, lang):
+    def create_searchable_pdfs(self, images, lang, id_new_mediafile):
         pdfs = []
         not_valid_counter = 0
         for i in range(len(images)):
@@ -136,22 +155,33 @@ class OcrService(object):
             try:
                 img_data = self.storage_api_service.download_image(images[i])
             except Exception as ex:
+                self.collection_api_service.delete_mediafile(id_new_mediafile)
+                app.logger.info("The created mediafile is deleted due to an error:")
                 app.logger.error(
                     f'"The ocr function failed during downloading the image in the storage api:" {ex}'
                 )
 
             self.__create_pdf(i)
             pdfs.append(CLIENT_PDF_PATH + str(i))
-            output = self.__run_tesseract(
-                pytesseract.image_to_pdf_or_hocr, CLIENT_IMAGE_PATH, img_data, lang
-            )
-            with open(pdfs[i - not_valid_counter], "wb") as binary_pdf:
-                binary_pdf.write(output)
+            try:
+                output = self.__run_tesseract(
+                    pytesseract.image_to_pdf_or_hocr, CLIENT_IMAGE_PATH, img_data, lang
+                )
+                with open(pdfs[i - not_valid_counter], "wb") as binary_pdf:
+                    binary_pdf.write(output)
+            except Exception as ex:
+                self.collection_api_service.delete_mediafile(id_new_mediafile)
+                app.logger.info("The created mediafile is deleted due to an error:")
+                app.logger.error(
+                    f'"The ocr function failed during running tesseract and writing the output:" {ex}'
+                )
         return pdfs
 
-    def merge_searchable_pdfs(self, images, lang):
-        pdfs = self.create_searchable_pdfs(images, lang)
+    def merge_searchable_pdfs(self, images, lang, id_new_mediafile):
+        pdfs = self.create_searchable_pdfs(images, lang, id_new_mediafile)
         if len(pdfs) == 0:
+            self.collection_api_service.delete_mediafile(id_new_mediafile)
+            app.logger.info("The created mediafile is deleted due to an error:")
             app.logger.error("The ocr function failed because: File not found")
 
         self.__create_pdf(-1)

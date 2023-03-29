@@ -130,7 +130,7 @@ class Ocr(Resource):
             response=f"Ocr job is put on queue. Fetch it later with the mediafile id: [{id_new_mediafile}]",
             status=200,
             headers=self.headers,
-            mimetype="text/plain"
+            mimetype="text/plain",
         )
 
     def post(self):

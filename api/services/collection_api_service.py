@@ -47,6 +47,12 @@ class CollectionApiService(object):
             raise Exception(req.text.strip())
         return req
 
+    def delete_mediafile(self, mediafile_id):
+        req = requests.delete(f"{self.collection_api_url}/mediafiles/{mediafile_id}")
+        if req.status_code != 204:
+            raise Exception("AMAAAAAAI" + req.text.strip())
+        return req
+
     # def get_job_by_id(self, job_id):
     #     req = requests.get(
     #         f"{self.collection_api_url}/jobs/{job_id}",

@@ -5,12 +5,14 @@ from services.storage_api_service import StorageApiService
 from services.collection_api_service import CollectionApiService
 
 
-def __get_ocr_output(operation, mediafile_image_data, lang, image_name):
+def __get_ocr_output(
+    operation, mediafile_image_data, lang, image_name, id_new_mediafile
+):
     ocr_service = OcrService()
     try:
         return ocr_service.ocr(
-            operation, mediafile_image_data, lang, image_name
-        )  # ERROR IS HERE
+            operation, mediafile_image_data, lang, image_name, id_new_mediafile
+        )
     except Exception as ex:
         app.logger.error(f'"In queues - The ocr function failed with:" {ex}')
 
@@ -51,6 +53,7 @@ def do_ocr(routing_key, body, message_id):
         body["mediafile_image_data"],
         body["lang"],
         body["image_name"],
+        body["id_new_mediafile"],
     )
     __upload_ocr_output(
         ocr_output, body["id_new_mediafile"], mediafile_name, content_type
