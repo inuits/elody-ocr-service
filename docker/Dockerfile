@@ -11,6 +11,7 @@ COPY docker/entrypoint*.sh /
 COPY docker/run-tests.sh /
 COPY docker/test-coverage.sh /
 COPY requirements.txt ./
+COPY requirements_dev.txt ./
 
 RUN echo "export PATH=${PATH}:/app/.local/bin" >> .bashrc
 
@@ -23,7 +24,7 @@ ENV APP_ENV=dev
 
 COPY docker/pip.conf /etc
 
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt -r requirements_dev.txt
 
 EXPOSE 5000
 
