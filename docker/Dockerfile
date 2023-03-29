@@ -9,6 +9,7 @@ WORKDIR /app
 
 COPY docker/entrypoint*.sh /
 COPY docker/run-tests.sh /
+COPY docker/test-coverage.sh /
 COPY requirements.txt ./
 
 RUN echo "export PATH=${PATH}:/app/.local/bin" >> .bashrc

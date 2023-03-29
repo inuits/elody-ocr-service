@@ -18,7 +18,7 @@ class StorageApiService(object):
         )
         if req.status_code != 200:
             raise Exception(req.text.strip())
-        return req
+        return req.content
 
     def upload_ocr(self, ocr_output, id_mediafile, mediafile_name, content_type):
         self.headers["Content-Type"] = content_type

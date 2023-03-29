@@ -73,11 +73,9 @@ class Ocr(Resource):
 
     def __validate_language(self, lang):
         warning = None
-
         if not lang or lang not in ALLOWED_LANGUAGES:
             lang = ALLOWED_LANGUAGES[0]  # set default to eng
             warning = '299, "Arbitrary information that should be presented to a user or logged.", "For now the ocr tool used ENG as default language. You can specify the language with the key [lang] and possible values: eng, ned, fra'
-
         return lang, warning
 
     def __is_mimetype_from_filename_valid(self, filename):

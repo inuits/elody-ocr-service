@@ -31,7 +31,7 @@ class OcrService(object):
 
     def __run_tesseract(self, method, path, image_data, lang):
         with open(path, "wb") as handler:
-            handler.write(image_data.content)
+            handler.write(image_data)
         data = method(Image.open(path), lang=lang)
         Path(path).unlink()
         return data
