@@ -1,8 +1,4 @@
-import json
-import pytest
 from tests.base_case import BaseCase
-from unittest.mock import patch, MagicMock
-from resources.ocr import Ocr
 
 
 class OcrValidationRulesTest(BaseCase):

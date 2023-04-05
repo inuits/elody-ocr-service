@@ -1,8 +1,6 @@
 import app
-import json
 from services.ocr_service import OcrService
 from services.storage_api_service import StorageApiService
-from services.collection_api_service import CollectionApiService
 
 
 def __get_ocr_output(

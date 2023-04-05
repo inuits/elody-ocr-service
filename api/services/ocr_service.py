@@ -1,17 +1,12 @@
+import os
 from pathlib import Path
+import app
+import pytesseract
+from PIL import Image
 from fpdf import FPDF
 from pypdf import PdfMerger
-from PIL import Image
-from urllib.parse import urlparse
-from humanfriendly import parse_size
-import app
-from flask_restful import abort
-import os
-import pytesseract
-import magic
-from services.storage_api_service import StorageApiService
 from services.collection_api_service import CollectionApiService
-
+from services.storage_api_service import StorageApiService
 
 CLIENT_PDF_FILENAME = str(os.getenv("CLIENT_PDF_FILENAME", False))
 CLIENT_IMAGE_PATH = str(os.getenv("CLIENT_IMAGE_PATH", False))
