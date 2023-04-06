@@ -3,7 +3,7 @@ FROM python:3.11-slim AS base-stage
 
 ENV FLASK_APP=app.py
 
-RUN apt-get -y update && apt-get -y install git libmagic1 tesseract-ocr tesseract-ocr-fra tesseract-ocr-nld pkg-config autoconf gcc build-essential automake libtool && \
+RUN apt-get -y update && apt-get -y install wget git libmagic1 tesseract-ocr tesseract-ocr-fra tesseract-ocr-nld pkg-config autoconf gcc build-essential automake libtool && \
     adduser --disabled-password --home /app --shell /bin/bash app
 
 RUN wget https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs10011/ghostscript-10.01.1.tar.gz && \
