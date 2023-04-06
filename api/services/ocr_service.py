@@ -1,7 +1,9 @@
 import os
+from io import BytesIO
 from pathlib import Path
 import app
 import pytesseract
+import ghostscript
 from PIL import Image
 from fpdf import FPDF
 from pypdf import PdfMerger
@@ -30,15 +32,6 @@ class OcrService(object):
         data = method(Image.open(path), lang=lang)
         Path(path).unlink()
         return data
-
-    def __create_pdf(self, i):
-        pdf = FPDF()
-        pdf.add_page()
-        pdf.set_font("helvetica", size=12)
-        if i != -1:
-            pdf.output(CLIENT_PDF_FILENAME + str(i))
-        else:
-            pdf.output(CLIENT_PDF_FILENAME)
 
     def __add_txt_to_metadata(self, mediafile_image_data, ocr_output):
         try:
@@ -90,19 +83,25 @@ class OcrService(object):
         images = []
         for i in range(len(mediafile_image_data)):
             images.append(mediafile_image_data[i].get("filename"))
-        self.merge_searchable_pdfs(images, lang, id_new_mediafile)
-        mediafile_name = (
-            mediafile_image_data[0].get("original_filename").split(".")[0] + ".pdf"
-        )
 
         try:
-            return open(CLIENT_PDF_PATH, "rb"), mediafile_name, "application/pdf"
+            self.create_pdf_with_ghostscript(images, lang, id_new_mediafile)
+        except Exception as ex:
+            self.collection_api_service.delete_mediafile(id_new_mediafile)
+            app.logger.info("The created mediafile is deleted due to an error:")
+            app.logger.error(f"Ghostscript failed: {ex}")
+
+        try:
+            mediafile_name = (
+                    mediafile_image_data[0].get("original_filename").split(".")[0] + ".pdf"
+            )
+            return open(CLIENT_PDF_FILENAME, "rb"), mediafile_name, "application/pdf"
         except Exception as ex:
             self.collection_api_service.delete_mediafile(id_new_mediafile)
             app.logger.info("The created mediafile is deleted due to an error:")
             app.logger.error(f'"In ocr_service - The ocr function failed with:" {ex}')
         finally:
-            Path(CLIENT_PDF_PATH).unlink()
+            Path(CLIENT_PDF_FILENAME).unlink()
 
     def convert_image_to_data(
         self,
@@ -140,7 +139,29 @@ class OcrService(object):
 
         return data, mediafile_name, mimetype
 
-    def create_searchable_pdfs(self, images, lang, id_new_mediafile):
+
+
+
+    def create_pdf_with_ghostscript(self, images, lang, id_new_mediafile):
+        pdfs = self.create_searchable_pdfs(images, id_new_mediafile)
+
+        args = [
+            "pdfocr8",
+            "-dNOPAUSE", "-dBATCH", "-dSAFER",
+            "-sDEVICE=pdfocr8",
+            f"-sOCRLanguage={lang}",
+            f"-sOutputFile={CLIENT_PDF_FILENAME}",
+        ]
+        for pdf in pdfs:
+            args.append("-f")
+            args.append(pdf)
+
+        ghostscript.Ghostscript(*args)
+        for pdf in pdfs:
+            Path(pdf).unlink()
+
+
+    def create_searchable_pdfs(self, images, id_new_mediafile):
         pdfs = []
         not_valid_counter = 0
         for i in range(len(images)):
@@ -156,35 +177,14 @@ class OcrService(object):
                     f'"The ocr function failed during downloading the image in the storage api:" {ex}'
                 )
 
-            self.__create_pdf(i)
-            pdfs.append(CLIENT_PDF_PATH + str(i))
-            try:
-                output = self.__run_tesseract(
-                    pytesseract.image_to_pdf_or_hocr, CLIENT_IMAGE_PATH, img_data, lang
-                )
-                with open(pdfs[i - not_valid_counter], "wb") as binary_pdf:
-                    binary_pdf.write(output)
-            except Exception as ex:
-                self.collection_api_service.delete_mediafile(id_new_mediafile)
-                app.logger.info("The created mediafile is deleted due to an error:")
-                app.logger.error(
-                    f'"The ocr function failed during running tesseract and writing the output:" {ex}'
-                )
+            pdfname = CLIENT_PDF_FILENAME + str(i) + '.pdf'
+            if not images[i].endswith('.pdf'):
+                img = Image.open(BytesIO(img_data))
+                pdf = img.convert('RGB')
+                pdf.save(pdfname)
+            else:
+                with open(pdfname, "wb") as handler:
+                    handler.write(img_data)
+
+            pdfs.append(pdfname)
         return pdfs
-
-    def merge_searchable_pdfs(self, images, lang, id_new_mediafile):
-        pdfs = self.create_searchable_pdfs(images, lang, id_new_mediafile)
-        if len(pdfs) == 0:
-            self.collection_api_service.delete_mediafile(id_new_mediafile)
-            app.logger.info("The created mediafile is deleted due to an error:")
-            app.logger.error("The ocr function failed because: File not found")
-
-        self.__create_pdf(-1)
-        pdf_merger = PdfMerger()
-        for pdfUrl in pdfs:
-            pdf_merger.append(pdfUrl)
-        with Path(CLIENT_PDF_PATH).open(mode="wb") as output_file:
-            pdf_merger.write(output_file)
-
-        for pdf in pdfs:
-            Path(pdf).unlink()

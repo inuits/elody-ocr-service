@@ -3,7 +3,19 @@ FROM python:3.11-slim AS base-stage
 
 ENV FLASK_APP=app.py
 
-RUN apt-get -y update && apt-get -y install libmagic1 tesseract-ocr tesseract-ocr-fra tesseract-ocr-nld && adduser --disabled-password --home /app --shell /bin/bash app
+RUN apt-get -y update && apt-get -y install git libmagic1 tesseract-ocr tesseract-ocr-fra tesseract-ocr-nld pkg-config autoconf gcc build-essential automake libtool && \
+    adduser --disabled-password --home /app --shell /bin/bash app
+
+COPY docker/ghostscript-10.01.1.tar.gz /
+RUN tar -zxf /ghostscript-10.01.1.tar.gz && \
+    cd ghostscript-10.01.1/ && \
+    ./configure --prefix=/usr && \
+    make so -j9 && make soinstall && \
+    rm /ghostscript-10.01.1.tar.gz
+
+RUN git clone https://github.com/tesseract-ocr/tessdata_best.git  && \
+    cp -r tessdata_best /ghostscript-10.01.1/tesseract/tessdata/tessdata_best/
+
 USER app
 WORKDIR /app
 

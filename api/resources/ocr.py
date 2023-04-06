@@ -14,6 +14,7 @@ ALLOWED_MIMETYPES = [
     "image/tiff",
     "image/gif",
     "image/webp",
+    "application/pdf"
 ]
 
 
@@ -78,13 +79,15 @@ class Ocr(Resource):
             warning = '299, "Arbitrary information that should be presented to a user or logged.", "For now the ocr tool used ENG as default language. You can specify the language with the key [lang] and possible values: eng, ned, fra'
         return lang, warning
 
-    def __is_mimetype_from_filename_valid(self, filename):
+    def __is_mimetype_from_filename_valid(self, filename, operation):
         mime = mimetypes.guess_type(filename, False)[0]
+        if mime == "application/pdf" and operation != "pdf":
+            return False
         return mime in ALLOWED_MIMETYPES
 
-    def __get_imagename_and_validate(self, mediafile_image_data):
+    def __get_imagename_and_validate(self, mediafile_image_data, operation):
         image_name = mediafile_image_data[0].get("filename")
-        if not self.__is_mimetype_from_filename_valid(image_name):
+        if not self.__is_mimetype_from_filename_valid(image_name, operation):
             # app.jobs_extension.fail_job(self.main_job, "Extension is not valid")
             abort(400, message="Extension is not valid")
         return image_name
@@ -150,7 +153,7 @@ class Ocr(Resource):
         mediafile_image_data = self.__get_mediafiles_and_check_existence(
             count, mediafile_id
         )
-        image_name = self.__get_imagename_and_validate(mediafile_image_data)
+        image_name = self.__get_imagename_and_validate(mediafile_image_data, operation)
         id_new_mediafile = self.__create_mediafile(mediafile_image_data, operation)
 
         body = {
