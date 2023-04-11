@@ -3,10 +3,22 @@ FROM python:3.11-slim AS base-stage
 
 ENV FLASK_APP=app.py
 
-RUN apt-get -y update && apt-get -y install wget git libmagic1 tesseract-ocr tesseract-ocr-fra tesseract-ocr-nld pkg-config autoconf gcc build-essential automake libtool
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    autoconf \
+    automake \
+    build-essential \
+    gcc \
+    libmagic1 \
+    libtool \
+    pkg-config \
+    tesseract-ocr \
+    tesseract-ocr-fra \
+    tesseract-ocr-nld \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN wget https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs10011/ghostscript-10.01.1.tar.gz && \
-    tar -zxf /ghostscript-10.01.1.tar.gz && \
+    tar -zxf ghostscript-10.01.1.tar.gz && \
     cd ghostscript-10.01.1/ && \
     ./configure --prefix=/usr && \
     make so -j9 && \
@@ -14,9 +26,19 @@ RUN wget https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download
     cd / && \
     rm -rf ghostscript-10.01.1.tar.gz ghostscript-10.01.1/
 
-RUN git clone https://github.com/tesseract-ocr/tessdata_best.git && \
-    cp -r tessdata_best/ /usr/lib/ && \
-    rm -rf tessdata_best/
+RUN wget https://github.com/tesseract-ocr/tessdata_best/archive/refs/tags/4.1.0.tar.gz && \
+    tar -zxf 4.1.0.tar.gz && \
+    cp -r tessdata_best-4.1.0/ /usr/lib/ && \
+    rm -rf 4.1.0.tar.gz tessdata_best-4.1.0/
+
+RUN apt-get -y remove \
+    autoconf \
+    automake \
+    build-essential \
+    gcc \
+    libtool \
+    pkg-config \
+    wget
 
 RUN adduser --disabled-password --home /app --shell /bin/bash app
 
