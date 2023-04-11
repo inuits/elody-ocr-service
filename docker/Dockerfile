@@ -26,12 +26,13 @@ RUN wget https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download
     cd / && \
     rm -rf ghostscript-10.01.1.tar.gz ghostscript-10.01.1/
 
-RUN wget https://github.com/tesseract-ocr/tessdata_best/archive/refs/tags/4.1.0.tar.gz && \
-    tar -zxf 4.1.0.tar.gz && \
-    cp -r tessdata_best-4.1.0/ /usr/lib/ && \
-    rm -rf 4.1.0.tar.gz tessdata_best-4.1.0/
+RUN mkdir -p /usr/lib/tessdata/script && \
+    wget https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/main/script/Latin.traineddata -O /usr/lib/tessdata/script/Latin.traineddata && \
+    wget https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/main/nld.traineddata -O /usr/lib/tessdata/nld.traineddata && \
+    wget https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/main/eng.traineddata -O /usr/lib/tessdata/eng.traineddata && \
+    wget https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/main/fra.traineddata -O /usr/lib/tessdata/fra.traineddata
 
-RUN apt-get -y remove \
+RUN apt-get -y purge \
     autoconf \
     automake \
     build-essential \
