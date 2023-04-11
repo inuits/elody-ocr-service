@@ -1,13 +1,10 @@
 import os
 import requests
 
+from singleton import Singleton
 
-class StorageApiService(object):
-    def __new__(cls):
-        if not hasattr(cls, "instance"):
-            cls.instance = super(StorageApiService, cls).__new__(cls)
-        return cls.instance
 
+class StorageApiService(metaclass=Singleton):
     def __init__(self):
         self.storage_api_url = os.getenv("STORAGE_API_URL")
         self.headers = {"Authorization": f'Bearer {os.getenv("STATIC_JWT")}'}

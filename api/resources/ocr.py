@@ -1,6 +1,7 @@
 import app
-import os
 import mimetypes
+import os
+
 from flask import request, Response
 from flask_restful import abort, Resource
 from services.collection_api_service import CollectionApiService
@@ -14,7 +15,7 @@ ALLOWED_MIMETYPES = [
     "image/tiff",
     "image/gif",
     "image/webp",
-    "application/pdf"
+    "application/pdf",
 ]
 
 
@@ -23,6 +24,35 @@ class Ocr(Resource):
         self.headers = {"Authorization": f'Bearer {os.getenv("STATIC_JWT")}'}
         self.collection_api_service = CollectionApiService()
         # self.main_job = None
+
+    def __create_mediafile(self, mediafile_image_data, operation):
+        try:
+            response = self.collection_api_service.create_mediafile(
+                mediafile_image_data, operation
+            )
+        except Exception as ex:
+            # app.jobs_extension.fail_job(self.main_job, str(ex))
+            abort(400, message=str(ex))
+        new_mediafile = response.json()
+        return new_mediafile.get("_key", new_mediafile["_id"])
+
+    def __get_imagename_and_validate(self, mediafile_image_data, operation):
+        image_name = mediafile_image_data[0].get("filename")
+        if not self.__is_mimetype_from_filename_valid(image_name, operation):
+            # app.jobs_extension.fail_job(self.main_job, "Extension is not valid")
+            abort(400, message="Extension is not valid")
+        return image_name
+
+    def __get_mediafiles_and_check_existence(self, count, mediafile_id):
+        try:
+            mediafile_image_data = []
+            for i in range(count):
+                response = self.collection_api_service.get_mediafile(mediafile_id[i])
+                mediafile_image_data.append(response.json())
+        except Exception as ex:  # it doesn't exist
+            # app.jobs_extension.fail_job(self.main_job, str(ex))
+            abort(400, message=str(ex))
+        return mediafile_image_data
 
     def __get_request_body(self):
         if request_body := request.get_json(silent=True):
@@ -38,6 +68,12 @@ class Ocr(Resource):
                 message=f"Malformed request body. Mandatory fieds: {[field for field in fields]}",
             )
 
+    def __is_mimetype_from_filename_valid(self, filename, operation):
+        mime = mimetypes.guess_type(filename, False)[0]
+        if mime == "application/pdf" and operation != "pdf":
+            return False
+        return mime in ALLOWED_MIMETYPES
+
     def __is_wrong_operation(self, operation):
         if operation not in ["txt", "alto", "pdf"]:
             # app.jobs_extension.fail_job(self.main_job, "Invalid operation")
@@ -45,6 +81,33 @@ class Ocr(Resource):
                 405,
                 message="Invalid operation. Possible operations are ['txt', 'alto', 'pdf']",
             )
+
+    def __send_message_to_queue_and_terminate_call(
+        self, body, id_new_mediafile, warning
+    ):
+        try:
+            app.logger.info("Going to send message to queue")
+            # app.jobs_extension.progress_job(self.main_job, mediafile_id=body.get("id_new_mediafile"))
+            app.rabbit.send(body, routing_key="dams.ocr_request")
+        except Exception as ex:
+            # app.jobs_extension.fail_job(self.main_job, str(ex))
+            abort(400, f"Exception at queue: {str(ex)}")
+
+        if warning:
+            self.headers["Warning"] = warning
+        return Response(
+            response=f"Ocr job is put on queue. Fetch it later with the mediafile id: [{id_new_mediafile}]",
+            status=200,
+            headers=self.headers,
+            mimetype="text/plain",
+        )
+
+    def __validate_language(self, lang):
+        warning = None
+        if not lang or lang not in ALLOWED_LANGUAGES:
+            lang = ALLOWED_LANGUAGES[0]  # set default to eng
+            warning = '299, "Arbitrary information that should be presented to a user or logged.", "For now the ocr tool used ENG as default language. You can specify the language with the key [lang] and possible values: eng, ned, fra'
+        return lang, warning
 
     def __validate_mediafiles(self, mediafile_ids, operation):
         if not isinstance(mediafile_ids, list):
@@ -71,68 +134,6 @@ class Ocr(Resource):
                     message="Malformed request body. You cannot give an empty mediafile id",
                 )
         return len(mediafile_ids)
-
-    def __validate_language(self, lang):
-        warning = None
-        if not lang or lang not in ALLOWED_LANGUAGES:
-            lang = ALLOWED_LANGUAGES[0]  # set default to eng
-            warning = '299, "Arbitrary information that should be presented to a user or logged.", "For now the ocr tool used ENG as default language. You can specify the language with the key [lang] and possible values: eng, ned, fra'
-        return lang, warning
-
-    def __is_mimetype_from_filename_valid(self, filename, operation):
-        mime = mimetypes.guess_type(filename, False)[0]
-        if mime == "application/pdf" and operation != "pdf":
-            return False
-        return mime in ALLOWED_MIMETYPES
-
-    def __get_imagename_and_validate(self, mediafile_image_data, operation):
-        image_name = mediafile_image_data[0].get("filename")
-        if not self.__is_mimetype_from_filename_valid(image_name, operation):
-            # app.jobs_extension.fail_job(self.main_job, "Extension is not valid")
-            abort(400, message="Extension is not valid")
-        return image_name
-
-    def __get_mediafiles_and_check_existence(self, count, mediafile_id):
-        try:
-            mediafile_image_data = []
-            for i in range(count):
-                response = self.collection_api_service.get_mediafile(mediafile_id[i])
-                mediafile_image_data.append(response.json())
-        except Exception as ex:  # it doesn't exist
-            # app.jobs_extension.fail_job(self.main_job, str(ex))
-            abort(400, message=str(ex))
-        return mediafile_image_data
-
-    def __create_mediafile(self, mediafile_image_data, operation):
-        try:
-            response = self.collection_api_service.create_mediafile(
-                mediafile_image_data, operation
-            )
-        except Exception as ex:
-            # app.jobs_extension.fail_job(self.main_job, str(ex))
-            abort(400, message=str(ex))
-        new_mediafile = response.json()
-        return new_mediafile.get("_key", new_mediafile["_id"])
-
-    def __send_message_to_queue_and_terminate_call(
-        self, body, id_new_mediafile, warning
-    ):
-        try:
-            app.logger.info("Going to send message to queue")
-            # app.jobs_extension.progress_job(self.main_job, mediafile_id=body.get("id_new_mediafile"))
-            app.rabbit.send(body, routing_key="dams.ocr_request")
-        except Exception as ex:
-            # app.jobs_extension.fail_job(self.main_job, str(ex))
-            abort(400, f"Exception at queue: {str(ex)}")
-
-        if warning:
-            self.headers["Warning"] = warning
-        return Response(
-            response=f"Ocr job is put on queue. Fetch it later with the mediafile id: [{id_new_mediafile}]",
-            status=200,
-            headers=self.headers,
-            mimetype="text/plain",
-        )
 
     def post(self):
         # self.main_job = app.jobs_extension.create_new_job(

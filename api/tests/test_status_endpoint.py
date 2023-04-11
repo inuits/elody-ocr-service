@@ -2,7 +2,6 @@ from tests.base_case import BaseCase
 
 
 class StatusEndpointTest(BaseCase):
-    # STATUS ENDPOINT
     def test_status_endpoint_get(self):
         response = self.app.get(
             f"/status", headers={"content-type": "multipart/form-data"}

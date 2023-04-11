@@ -1,24 +1,23 @@
-import os
-import requests
 import app
+import requests
+import os
+
+from singleton import Singleton
 
 
-class CollectionApiService(object):
-    def __new__(cls):
-        if not hasattr(cls, "instance"):
-            cls.instance = super(CollectionApiService, cls).__new__(cls)
-        return cls.instance
-
+class CollectionApiService(metaclass=Singleton):
     def __init__(self):
         self.collection_api_url = os.getenv("COLLECTION_API_URL")
         self.headers = {"Authorization": f'Bearer {os.getenv("STATIC_JWT")}'}
 
-    def get_mediafile(self, mediafile_id):
-        req = requests.get(
+    def add_ocr_output_to_metadata(self, mediafile_id, metadata):
+        app.logger.info("Storing the metadata in the original image file")
+        req = requests.patch(
             f"{self.collection_api_url}/mediafiles/{mediafile_id}",
+            json=metadata,
             headers=self.headers,
         )
-        if req.status_code != 200:
+        if req.status_code != 201:
             raise Exception(req.text.strip())
         return req
 
@@ -32,17 +31,6 @@ class CollectionApiService(object):
             headers=self.headers,
         )
 
-        if req.status_code != 201:
-            raise Exception(req.text.strip())
-        return req
-
-    def add_ocr_output_to_metadata(self, mediafile_id, metadata):
-        app.logger.info("Storing the metadata in the original image file")
-        req = requests.patch(
-            f"{self.collection_api_url}/mediafiles/{mediafile_id}",
-            json=metadata,
-            headers=self.headers,
-        )
         if req.status_code != 201:
             raise Exception(req.text.strip())
         return req
@@ -61,3 +49,12 @@ class CollectionApiService(object):
     #     if req.status_code != 200:
     #         raise Exception(req.text.strip())
     #     return req.json()
+
+    def get_mediafile(self, mediafile_id):
+        req = requests.get(
+            f"{self.collection_api_url}/mediafiles/{mediafile_id}",
+            headers=self.headers,
+        )
+        if req.status_code != 200:
+            raise Exception(req.text.strip())
+        return req

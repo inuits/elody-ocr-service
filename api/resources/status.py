@@ -1,6 +1,7 @@
+import flask
 import os
 import pkg_resources
-import flask
+
 from flask_restful import abort, Resource
 
 
