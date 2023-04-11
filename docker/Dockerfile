@@ -11,11 +11,12 @@ RUN wget https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download
     ./configure --prefix=/usr && \
     make so -j9 && \
     make soinstall && \
-    rm /ghostscript-10.01.1.tar.gz
+    cd / && \
+    rm -rf ghostscript-10.01.1.tar.gz ghostscript-10.01.1/
 
-RUN git clone https://github.com/tesseract-ocr/tessdata_best.git  && \
-    cp -r tessdata_best /ghostscript-10.01.1/tesseract/tessdata/tessdata_best/ && \
-    rm -rf tessdata_best
+RUN git clone https://github.com/tesseract-ocr/tessdata_best.git && \
+    cp -r tessdata_best/ /usr/lib/ && \
+    rm -rf tessdata_best/
 
 RUN adduser --disabled-password --home /app --shell /bin/bash app
 
