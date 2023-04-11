@@ -35,6 +35,13 @@ class OcrService(metaclass=Singleton):
                 f'"The ocr function failed during update of metadata:" {ex}'
             )
 
+    def __run_tesseract(self, method, path, image_data, lang):
+        with open(path, "wb") as handler:
+            handler.write(image_data)
+        data = method(Image.open(path), lang=lang)
+        Path(path).unlink()
+        return data
+
     def convert_image_to_data(
         self,
         method,
@@ -175,10 +182,3 @@ class OcrService(metaclass=Singleton):
             app.logger.error(f'"In ocr_service - The ocr function failed with:" {ex}')
         finally:
             Path(CLIENT_PDF_FILENAME).unlink()
-
-    def __run_tesseract(self, method, path, image_data, lang):
-        with open(path, "wb") as handler:
-            handler.write(image_data)
-        data = method(Image.open(path), lang=lang)
-        Path(path).unlink()
-        return data
