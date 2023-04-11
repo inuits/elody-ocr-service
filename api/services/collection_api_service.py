@@ -41,14 +41,14 @@ class CollectionApiService(metaclass=Singleton):
             raise Exception(req.text.strip())
         return req
 
-    # def get_job_by_id(self, job_id):
-    #     req = requests.get(
-    #         f"{self.collection_api_url}/jobs/{job_id}",
-    #         headers=self.headers,
-    #     )
-    #     if req.status_code != 200:
-    #         raise Exception(req.text.strip())
-    #     return req.json()
+    def get_job_by_id(self, job_id):
+        req = requests.get(
+            f"{self.collection_api_url}/jobs/{job_id}",
+            headers=self.headers,
+        )
+        if req.status_code != 200:
+            raise Exception(req.text.strip())
+        return req.json()
 
     def get_mediafile(self, mediafile_id):
         req = requests.get(

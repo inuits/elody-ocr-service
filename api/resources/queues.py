@@ -1,5 +1,6 @@
 import app
 
+from services.collection_api_service import CollectionApiService
 from services.ocr_service import OcrService
 from services.storage_api_service import StorageApiService
 
@@ -19,25 +20,25 @@ def do_ocr(routing_key, body, message_id):
         ocr_output, body["id_new_mediafile"], mediafile_name, content_type
     )
 
-    # __get_and_finish_job(body)
+    __get_and_finish_job(body)
     app.logger.info(
         "The ocr job is complete. You can now fetch the image with the given id"
     )
 
 
-# def __get_and_finish_job(body):
-#     collection_api_service = CollectionApiService()
-#     try:
-#         job = collection_api_service.get_job_by_id(body.get("main_job_identifier"))
-#     except Exception as ex:
-#         app.logger.error(
-#             f'"The ocr function failed during fetching the job by id:" {ex}'
-#         )
-#
-#     app.jobs_extension.finish_job(
-#         job,
-#         f"Successfully OCRed image '{body.get('image_name')}' with id '{body.get('id_new_mediafile')}'",
-#     )
+def __get_and_finish_job(body):
+    collection_api_service = CollectionApiService()
+    try:
+        job = collection_api_service.get_job_by_id(body.get("main_job_identifier"))
+    except Exception as ex:
+        app.logger.error(
+            f'"The ocr function failed during fetching the job by id:" {ex}'
+        )
+
+    app.jobs_extension.finish_job(
+        job,
+        f"Successfully OCRed image '{body.get('image_name')}' with id '{body.get('id_new_mediafile')}'",
+    )
 
 
 def __get_ocr_output(
