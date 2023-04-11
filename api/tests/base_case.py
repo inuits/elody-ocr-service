@@ -1,3 +1,4 @@
+import services
 import unittest
 
 from app import app
@@ -25,9 +26,9 @@ class BaseCase(unittest.TestCase):
     }
 
     alto_md5 = {
-        "eng": "00fa00688eb377f28adf841a119e942c",
-        "nld": "4729e74e013673cf2979533621f7c37f",
-        "fra": "bea4de68fd227cda4fa04be104c2f018",
+        "eng": "227a36e0ac35113f0d8fec6ddb6cb688",
+        "nld": "696b7d75a3dac7fc140844f3c0c28e06",
+        "fra": "9a65f95ca52660fe199b883764b83e90",
     }
     pdf_md5 = {
         "eng": "f5d5e55a5041ef1435a0adc3a12d2263",
@@ -40,11 +41,12 @@ class BaseCase(unittest.TestCase):
         "fra": "622f358887cfbab7023e74501c6c7348",
     }
     txt_md5 = {
-        "eng": "17d482e4437ae14fefd9992d721e4cb3",
-        "nld": "e599b7f46027e8ec966a87e84f123aad",
-        "fra": "b098f3c27a6cb3cf97e6122cb1445baa",
+        "eng": "e12db9f1f70a8c4ee1ee83b425b1f220",
+        "nld": "3be84f9b72ed00f49eef5b9bf609ba6f",
+        "fra": "b8f8c2c1ef22c917cca9725bbadecab8",
     }
 
     def setUp(self):
         app.testing = True
         self.app = app.test_client()
+        self.ocr_service = services.ocr_service.OcrService()
