@@ -78,11 +78,13 @@ app.add_url_rule("/health", "healthcheck", view_func=lambda: health.run())
 
 
 from resources.ocr import Ocr
+from resources.ocr_correction import OcrCorrection
 from resources.status import Status
 import resources.queues
 from resources.spec import OpenAPISpec
 
 api.add_resource(Ocr, "/ocr")
+api.add_resource(OcrCorrection, "/ocr/correction")
 api.add_resource(Status, "/status")
 api.add_resource(OpenAPISpec, "/spec/inuits-dams-ocr-service.json")
 
