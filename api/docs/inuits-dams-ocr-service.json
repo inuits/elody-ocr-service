@@ -127,9 +127,12 @@
         ],
         "properties": {
           "mediafile_id": {
-            "type": "string",
+            "type": "array",
             "description": "mediafile id",
-            "format": "uuid"
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
           },
           "operation": {
             "type": "string",
