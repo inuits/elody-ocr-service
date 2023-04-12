@@ -71,15 +71,9 @@ def rabbit_available():
     return True, rabbit.get_connection().is_open
 
 
-def tesseract_available():
-    available = os.popen("tesseract -v && echo $?").readlines()[-1][0] == "0"
-    return available, available
-
-
 health = HealthCheck()
 if os.getenv("HEALTH_CHECK_EXTERNAL_SERVICES", True) in ["True", "true", True]:
     health.add_check(rabbit_available)
-    health.add_check(tesseract_available)
 app.add_url_rule("/health", "healthcheck", view_func=lambda: health.run())
 
 
