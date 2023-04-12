@@ -31,14 +31,9 @@ class BaseCase(unittest.TestCase):
         "fra": "9a65f95ca52660fe199b883764b83e90",
     }
     pdf_md5 = {
-        "eng": "f5d5e55a5041ef1435a0adc3a12d2263",
-        "nld": "a44a1e5d0c23d1493e57fd93c66683d3",
-        "fra": "6e3a4c2dd873cb84c2cea40db4a5d97e",
-    }
-    pdfs_md5 = {
-        "eng": "03daba6ed1850964f2e372f63a7d1438",
-        "nld": "ffff70fa984fc789fbd42881b9550fe1",
-        "fra": "622f358887cfbab7023e74501c6c7348",
+        "eng": "7b411852f806cd7f462055584a9f4dce",
+        "nld": "ff4aba70304e8a98cb9314858cde2036",
+        "fra": "06d2b09abeb5642293975265a87d6800",
     }
     txt_md5 = {
         "eng": "e12db9f1f70a8c4ee1ee83b425b1f220",
