@@ -24,13 +24,11 @@ class CollectionApiService(metaclass=Singleton):
     def create_mediafile(self, mediafile, operation):
         filename = mediafile[0]["original_filename"].split(".")[0] + f"-ocr.{operation}"
         data = {"filename": filename}
-
         req = requests.post(
             f"{self.collection_api_url}/mediafiles",
             json=data,
             headers=self.headers,
         )
-
         if req.status_code != 201:
             raise Exception(req.text.strip())
         return req

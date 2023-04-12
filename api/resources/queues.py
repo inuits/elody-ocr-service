@@ -27,10 +27,10 @@ def __upload_ocr_output(ocr_output, id_new_mediafile, mediafile_name, content_ty
             f'"The ocr function failed during uploading the image in the storage api:" {ex}'
         )
 
+
 @app.rabbit.queue("dams.ocr_request")
 def do_ocr(routing_key, body, message_id):
     app.logger.info("Message received:\tKey: {}".format(routing_key))
-
     ocr_output, mediafile_name, content_type = __get_ocr_output(
         body["operation"],
         body["mediafile_image_data"],
@@ -41,7 +41,6 @@ def do_ocr(routing_key, body, message_id):
     __upload_ocr_output(
         ocr_output, body["id_new_mediafile"], mediafile_name, content_type
     )
-
     app.logger.info(
         "The ocr job is complete. You can now fetch the image with the given id"
     )

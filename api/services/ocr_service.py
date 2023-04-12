@@ -71,16 +71,13 @@ class OcrService(metaclass=Singleton):
             app.logger.error(
                 f"The ocr function failed during running tesseract en getting the filename: {ex}"
             )
-
         if ext == ".txt":
             self.__add_txt_to_metadata(mediafile_image_data[0], data)
             data = data.encode("utf-8")
-
         return data, mediafile_name, mimetype
 
     def create_pdf_with_ghostscript(self, images, lang, id_new_mediafile):
         pdfs = self.create_searchable_pdfs(images, id_new_mediafile)
-
         args = [
             "pdfocr8",
             "-dNOPAUSE",
@@ -93,7 +90,6 @@ class OcrService(metaclass=Singleton):
         for pdf in pdfs:
             args.append("-f")
             args.append(pdf)
-
         ghostscript.Ghostscript(*args)
         for pdf in pdfs:
             Path(pdf).unlink()
@@ -113,7 +109,6 @@ class OcrService(metaclass=Singleton):
                 app.logger.error(
                     f'"The ocr function failed during downloading the image in the storage api:" {ex}'
                 )
-
             pdfname = CLIENT_PDF_FILENAME + str(i) + ".pdf"
             if not images[i].endswith(".pdf"):
                 img = Image.open(BytesIO(img_data))
@@ -122,7 +117,6 @@ class OcrService(metaclass=Singleton):
             else:
                 with open(pdfname, "wb") as handler:
                     handler.write(img_data)
-
             pdfs.append(pdfname)
         return pdfs
 
@@ -163,14 +157,12 @@ class OcrService(metaclass=Singleton):
         images = []
         for i in range(len(mediafile_image_data)):
             images.append(mediafile_image_data[i].get("filename"))
-
         try:
             self.create_pdf_with_ghostscript(images, lang, id_new_mediafile)
         except Exception as ex:
             self.collection_api_service.delete_mediafile(id_new_mediafile)
             app.logger.info("The created mediafile is deleted due to an error:")
             app.logger.error(f"Ghostscript failed: {ex}")
-
         try:
             mediafile_name = (
                 mediafile_image_data[0].get("original_filename").split(".")[0] + ".pdf"

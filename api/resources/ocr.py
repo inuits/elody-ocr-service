@@ -83,7 +83,6 @@ class Ocr(Resource):
             app.rabbit.send(body, routing_key="dams.ocr_request")
         except Exception as ex:
             abort(400, f"Exception at queue: {str(ex)}")
-
         if warning:
             self.headers["Warning"] = warning
         return Response(
@@ -125,20 +124,16 @@ class Ocr(Resource):
     def post(self):
         content = self.__get_request_body()
         self.__is_malformed_message(content, ["mediafile_id", "operation"])
-
         operation = content["operation"]
         mediafile_id = content["mediafile_id"]
-
         self.__is_wrong_operation(operation)
         lang, warning = self.__validate_language(request.args.get("lang"))
         count = self.__validate_mediafiles(mediafile_id, operation)
-
         mediafile_image_data = self.__get_mediafiles_and_check_existence(
             count, mediafile_id
         )
         image_name = self.__get_imagename_and_validate(mediafile_image_data, operation)
         id_new_mediafile = self.__create_mediafile(mediafile_image_data, operation)
-
         body = {
             "operation": content["operation"],
             "mediafile_image_data": mediafile_image_data,

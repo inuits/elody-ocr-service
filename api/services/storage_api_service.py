@@ -24,7 +24,6 @@ class StorageApiService(metaclass=Singleton):
             data=ocr_output,
             headers=self.headers,
         )
-
         if req.status_code != 201:
             raise Exception(req.text.strip())
         return req
