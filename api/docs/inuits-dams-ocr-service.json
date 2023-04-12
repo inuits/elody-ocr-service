@@ -98,6 +98,23 @@
           }
         }
       }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Get health of ocr service",
+        "operationId": "getHealth",
+        "responses": {
+          "200": {
+            "description": "successful operation"
+          },
+          "500": {
+            "description": "internal server error"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -110,12 +127,9 @@
         ],
         "properties": {
           "mediafile_id": {
-            "type": "array",
+            "type": "string",
             "description": "mediafile id",
-            "items": {
-              "type": "string",
-              "format": "uuid"
-            }
+            "format": "uuid"
           },
           "operation": {
             "type": "string",
