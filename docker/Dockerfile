@@ -1,21 +1,17 @@
 ### Base stage
-FROM python:3.11-slim AS base-stage
+FROM python:3.11-alpine AS base-stage
 
 ENV FLASK_APP=app.py
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    autoconf \
-    automake \
-    build-essential \
+RUN apk update && apk add --no-cache \
     gcc \
-    libmagic1 \
-    libtool \
-    pkg-config \
+    g++ \
+    libmagic \
+    make \
     tesseract-ocr \
-    tesseract-ocr-fra \
-    tesseract-ocr-nld \
-    wget \
-    && rm -rf /var/lib/apt/lists/*
+    tesseract-ocr-data-fra \
+    tesseract-ocr-data-nld \
+    wget
 
 RUN wget https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs10011/ghostscript-10.01.1.tar.gz && \
     tar -zxf ghostscript-10.01.1.tar.gz && \
@@ -32,13 +28,10 @@ RUN mkdir -p /usr/lib/tessdata/script && \
     wget https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/main/eng.traineddata -O /usr/lib/tessdata/eng.traineddata && \
     wget https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/main/fra.traineddata -O /usr/lib/tessdata/fra.traineddata
 
-RUN apt-get -y purge \
-    autoconf \
-    automake \
-    build-essential \
+RUN apk del \
     gcc \
-    libtool \
-    pkg-config \
+    g++ \
+    make \
     wget
 
 RUN adduser --disabled-password --home /app --shell /bin/bash app
