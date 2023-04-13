@@ -11,7 +11,9 @@ class CollectionApiService(metaclass=Singleton):
         self.headers = {"Authorization": f'Bearer {os.getenv("STATIC_JWT")}'}
 
     def add_ocr_output_to_metadata(self, mediafile_id, metadata):
-        app.logger.info("Storing the metadata in the original image file")
+        app.logger.info(
+            "Storing the OCR txt output in the metadata of the original image file"
+        )
         req = requests.patch(
             f"{self.collection_api_url}/mediafiles/{mediafile_id}",
             json=metadata,

@@ -23,17 +23,26 @@ class OcrService(metaclass=Singleton):
         self.collection_api_service = CollectionApiService()
 
     def __add_txt_to_metadata(self, mediafile_image_data, ocr_output):
-        try:
-            metadata = {"key": "text_from_ocr", "value": ocr_output}
-            mediafile_image_data.get("metadata").append(metadata)
-            self.collection_api_service.add_ocr_output_to_metadata(
-                mediafile_image_data.get("_key"),
-                {"metadata": mediafile_image_data.get("metadata")},
+        metadata = mediafile_image_data.get("metadata")
+        original_text = next(
+            (item for item in metadata if item["key"] == "text_from_ocr"), None
+        )
+        if original_text:
+            app.logger.info(
+                "The OCR txt output is not saved in the metadata because it already exists"
             )
-        except Exception as ex:
-            app.logger.error(
-                f'"The ocr function failed during update of metadata:" {ex}'
-            )
+        else:
+            try:
+                new_metadata = {"key": "text_from_ocr", "value": ocr_output}
+                metadata.append(new_metadata)
+                self.collection_api_service.add_ocr_output_to_metadata(
+                    mediafile_image_data.get("_key"),
+                    {"metadata": mediafile_image_data.get("metadata")},
+                )
+            except Exception as ex:
+                app.logger.error(
+                    f'"The ocr function failed during update of metadata:" {ex}'
+                )
 
     def __run_tesseract(self, method, path, image_data, lang):
         with open(path, "wb") as handler:

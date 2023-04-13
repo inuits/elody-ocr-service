@@ -124,7 +124,7 @@ class OcrMethodsTest(BaseCase):
 
         self.assertEqual("application/pdf", mimetype)
         self.assertEqual("screenshot_loremipsum.pdf", mediafile_name)
-        actual_md5 = hashlib.md5(text_output.encode('utf-8')).hexdigest()
+        actual_md5 = hashlib.md5(text_output.encode("utf-8")).hexdigest()
         self.assertEqual(self.pdf_md5.get("eng"), actual_md5)
 
     def test_upload_one_image_NLD_receive_pdf_should_succeed(self):
@@ -146,9 +146,8 @@ class OcrMethodsTest(BaseCase):
 
         self.assertEqual("application/pdf", mimetype)
         self.assertEqual("screenshot_loremipsum.pdf", mediafile_name)
-        actual_md5 = hashlib.md5(text_output.encode('utf-8')).hexdigest()
+        actual_md5 = hashlib.md5(text_output.encode("utf-8")).hexdigest()
         self.assertEqual(self.pdf_md5.get("nld"), actual_md5)
-
 
     def test_upload_one_image_FRA_receive_pdf_should_succeed(self):
         self.ocr_service.__add_txt_to_metadata = MagicMock()
@@ -169,5 +168,5 @@ class OcrMethodsTest(BaseCase):
 
         self.assertEqual("application/pdf", mimetype)
         self.assertEqual("screenshot_loremipsum.pdf", mediafile_name)
-        actual_md5 = hashlib.md5(text_output.encode('utf-8')).hexdigest()
+        actual_md5 = hashlib.md5(text_output.encode("utf-8")).hexdigest()
         self.assertEqual(self.pdf_md5.get("fra"), actual_md5)
