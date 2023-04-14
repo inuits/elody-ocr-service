@@ -17,7 +17,7 @@ RUN wget https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download
     tar -zxf ghostscript-10.01.1.tar.gz && \
     cd ghostscript-10.01.1/ && \
     ./configure --prefix=/usr && \
-    make so -j9 && \
+    make so -j$(($(nproc)+2)) && \
     make soinstall && \
     cd / && \
     rm -rf ghostscript-10.01.1.tar.gz ghostscript-10.01.1/
