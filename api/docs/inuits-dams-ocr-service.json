@@ -82,6 +82,59 @@
         }
       }
     },
+    "/ocr/correction": {
+      "post": {
+        "tags": [
+          "ocr"
+        ],
+        "summary": "Post a correction on the OCR txt output",
+        "operationId": "doCorrection",
+        "requestBody": {
+          "description": "Details needed to make a OCR txt correction request",
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "mediafile_id": {
+                    "type": "string",
+                    "description": "mediafile id",
+                    "format": "uuid"
+                  },
+                  "updated_text": {
+                    "type": "string",
+                    "description": "The full ocr text ouptut updated with corrections"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ocr_correction"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ocr_correction"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/status": {
       "get": {
         "tags": [
@@ -137,6 +190,24 @@
           "operation": {
             "type": "string",
             "description": "operation: ['txt', 'alto', 'pdf']"
+          }
+        }
+      },
+      "ocr_correction": {
+        "type": "object",
+        "description": "Information to do an OCR txt correction request",
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "mediafile_id": {
+            "type": "string",
+            "description": "mediafile id",
+            "format": "uuid"
+          },
+          "updated_text": {
+            "type": "string",
+            "description": "The full ocr text ouptut updated with corrections"
           }
         }
       }
