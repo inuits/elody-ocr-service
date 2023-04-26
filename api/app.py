@@ -32,8 +32,6 @@ app.config.update(
         "MQ_EXCHANGE": os.getenv("RABMQ_SEND_EXCHANGE_NAME"),
         "MQ_URL": os.getenv("RABMQ_RABBITMQ_URL"),
         "SECRET_KEY": "SomethingNotEntirelySecret",
-        "TESTING": True,
-        "DEBUG": True,
     }
 )
 
@@ -89,4 +87,4 @@ api.add_resource(Status, "/status")
 api.add_resource(OpenAPISpec, "/spec/inuits-dams-ocr-service.json")
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run()
