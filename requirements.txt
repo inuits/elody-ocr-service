@@ -32,7 +32,7 @@ pycparser==2.21
 pypdf==3.8.1
 pytesseract==0.3.10
 pytz==2023.3
-rabbitmq-pika-flask==1.2.32
+rabbitmq-pika-flask==1.2.31
 requests==2.28.2
 retry==0.9.2
 sentry-sdk[flask]==0.10.2
