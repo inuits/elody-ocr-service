@@ -1,5 +1,6 @@
 import app
 import ghostscript
+import multiprocessing
 import os
 import pytesseract
 
@@ -88,11 +89,23 @@ class OcrService(metaclass=Singleton):
     def create_pdf_with_ghostscript(self, images, lang, id_new_mediafile):
         pdfs = self.create_searchable_pdfs(images, id_new_mediafile)
         args = [
-            "pdfocr8",
+            "pdfocr24", # ocr24 to have color
             "-dNOPAUSE",
             "-dBATCH",
-            "-dSAFER",
-            "-sDEVICE=pdfocr8",
+            "-sDEVICE=pdfocr24",
+            "-dPDFSETTINGS=/printer", # /printer: Higher quality to detect the letters (300dp) - /screen: storage problem could be solved with this
+            # "-dPDFA=2",
+            "-dAutoRotatePages=/None",
+            "-sColorConversionStrategy=RGB",
+            # "-dPDFACompatibilityPolicy=1",
+            "-dCompatibilityLevel=1.4",
+            # "-dTextAlphaBits=4",
+            # "-dGraphicsAlphaBits=4",
+            # "-dFIXEDMEDIA",
+            "-r300",
+            # "-dDITHERPPI=20",
+            # "-dAlignToPixels=0", # Improve rendering of poorly hinted fonts
+            f"-dNumRenderingThreads={multiprocessing.cpu_count()-1}", # Split up in threads and run on different cores
             f"-sOCRLanguage={lang}",
             f"-sOutputFile={CLIENT_PDF_FILENAME}",
         ]
