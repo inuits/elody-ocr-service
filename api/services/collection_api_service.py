@@ -36,7 +36,9 @@ class CollectionApiService(metaclass=Singleton):
         return req
 
     def delete_mediafile(self, mediafile_id):
-        req = requests.delete(f"{self.collection_api_url}/mediafiles/{mediafile_id}")
+        req = requests.delete(
+            f"{self.collection_api_url}/mediafiles/{mediafile_id}", headers=self.headers
+        )
         if req.status_code != 204:
             raise Exception(req.text.strip())
         return req
