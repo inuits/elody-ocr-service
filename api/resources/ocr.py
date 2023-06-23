@@ -134,6 +134,9 @@ class Ocr(Resource):
         )
         image_name = self.__get_imagename_and_validate(mediafile_image_data, operation)
         id_new_mediafile = self.__create_mediafile(mediafile_image_data, operation)
+        self.collection_api_service.add_ocr_output_to_parent_entities(
+            mediafile_id[0], id_new_mediafile
+        )
         body = {
             "operation": content["operation"],
             "mediafile_image_data": mediafile_image_data,
