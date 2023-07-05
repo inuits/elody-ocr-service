@@ -89,25 +89,26 @@ class OcrService(metaclass=Singleton):
     def create_pdf_with_ghostscript(self, images, lang, id_new_mediafile):
         pdfs = self.create_searchable_pdfs(images, id_new_mediafile)
         args = [
-            "pdfocr24", # ocr24 to have color
-            "-dNOPAUSE",
-            "-dBATCH",
+            "pdfocr24",  # ocr24 to have color
+            # "-dNOPAUSE",
+            # "-dBATCH",
             "-sDEVICE=pdfocr24",
-            "-dPDFSETTINGS=/printer", # /printer: Higher quality to detect the letters (300dp) - /screen: storage problem could be solved with this
+            # "-dPDFSETTINGS=/printer", # /printer: Higher quality to detect the letters (300dp) - /screen: storage problem could be solved with this
             # "-dPDFA=2",
-            "-dAutoRotatePages=/None",
-            "-sColorConversionStrategy=RGB",
+            # "-dAutoRotatePages=/None",
+            # "-sColorConversionStrategy=RGB",
             # "-dPDFACompatibilityPolicy=1",
-            "-dCompatibilityLevel=1.4",
+            # "-dCompatibilityLevel=1.4",
             # "-dTextAlphaBits=4",
             # "-dGraphicsAlphaBits=4",
             # "-dFIXEDMEDIA",
             "-r300",
             # "-dDITHERPPI=20",
             # "-dAlignToPixels=0", # Improve rendering of poorly hinted fonts
-            f"-dNumRenderingThreads={multiprocessing.cpu_count()-1}", # Split up in threads and run on different cores
+            f"-dNumRenderingThreads={multiprocessing.cpu_count()-1}",  # Split up in threads and run on different cores
             f"-sOCRLanguage={lang}",
             f"-sOutputFile={CLIENT_PDF_FILENAME}",
+            "-dDownScaleFactor=6",
         ]
         for pdf in pdfs:
             args.append("-f")
@@ -134,8 +135,7 @@ class OcrService(metaclass=Singleton):
             pdfname = CLIENT_PDF_FILENAME + str(i) + ".pdf"
             if not images[i].endswith(".pdf"):
                 img = Image.open(BytesIO(img_data))
-                pdf = img.convert("RGB")
-                pdf.save(pdfname)
+                img.save(pdfname, dpi=(150, 150))
             else:
                 with open(pdfname, "wb") as handler:
                     handler.write(img_data)
