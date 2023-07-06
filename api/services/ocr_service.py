@@ -4,6 +4,7 @@ import multiprocessing
 import os
 import pytesseract
 
+from fpdf import FPDF
 from io import BytesIO
 from pathlib import Path
 from PIL import Image
@@ -44,6 +45,15 @@ class OcrService(metaclass=Singleton):
                 app.logger.error(
                     f'"The ocr function failed during update of metadata:" {ex}'
                 )
+
+    def __create_pdf(self, i):
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_font("helvetica", size=12)
+        if i != -1:
+            pdf.output(CLIENT_PDF_FILENAME + str(i))
+        else:
+            pdf.output(CLIENT_PDF_FILENAME)
 
     def __run_tesseract(self, method, path, image_data, lang):
         with open(path, "wb") as handler:
@@ -116,6 +126,38 @@ class OcrService(metaclass=Singleton):
         ghostscript.Ghostscript(*args)
         for pdf in pdfs:
             Path(pdf).unlink()
+
+    def create_pdf_with_tesseract(self, images, id_new_mediafile):
+        pdfs = []
+        not_valid_counter = 0
+        for i in range(len(images)):
+            if not images[i]:
+                not_valid_counter += 1
+                continue
+            try:
+                img_data = self.storage_api_service.download_image(images[i])
+            except Exception as ex:
+                self.collection_api_service.delete_mediafile(id_new_mediafile)
+                app.logger.info("The created mediafile is deleted due to an error:")
+                app.logger.error(
+                    f'"The ocr function failed during downloading the image in the storage api:" {ex}'
+                )
+
+            self.__create_pdf(i)
+            pdfs.append(CLIENT_PDF_PATH + str(i))
+            try:
+                output = self.__run_tesseract(
+                    pytesseract.image_to_pdf_or_hocr, CLIENT_IMAGE_PATH, img_data, lang
+                )
+                with open(pdfs[i - not_valid_counter], "wb") as binary_pdf:
+                    binary_pdf.write(output)
+            except Exception as ex:
+                self.collection_api_service.delete_mediafile(id_new_mediafile)
+                app.logger.info("The created mediafile is deleted due to an error:")
+                app.logger.error(
+                    f'"The ocr function failed during running tesseract and writing the output:" {ex}'
+                )
+        return pdfs
 
     def create_searchable_pdfs(self, images, id_new_mediafile):
         pdfs = []
