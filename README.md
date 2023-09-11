@@ -9,4 +9,4 @@ The common repository contains information about how to easily run a local (deve
 ## Documentation
 
 When the API is started, documentation about the endpoints is provided on:
-* http://ocr-service.dams.localhost:8100/api/docs/
+* http://ocr-service.dams.localhost:8200/api/docs/
