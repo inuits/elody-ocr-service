@@ -13,14 +13,14 @@ RUN apk update && apk add --no-cache \
     tesseract-ocr-data-nld \
     wget
 
-RUN wget https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs10020/ghostscript-10.02.0.tar.gz && \
-    tar -zxf ghostscript-10.02.0.tar.gz && \
-    cd ghostscript-10.02.0/ && \
+RUN wget https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs10021/ghostscript-10.02.1.tar.gz && \
+    tar -zxf ghostscript-10.02.1.tar.gz && \
+    cd ghostscript-10.02.1/ && \
     ./configure --prefix=/usr && \
     make so -j$(($(nproc)+2)) && \
     make soinstall && \
     cd / && \
-    rm -rf ghostscript-10.02.0.tar.gz ghostscript-10.02.0/
+    rm -rf ghostscript-10.02.1.tar.gz ghostscript-10.02.1/
 
 RUN mkdir -p /usr/lib/tessdata/script && \
     wget https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/main/script/Latin.traineddata -O /usr/lib/tessdata/script/Latin.traineddata && \
