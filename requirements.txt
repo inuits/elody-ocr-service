@@ -17,7 +17,7 @@ fonttools==4.46.0
 fpdf2==2.7.6
 ghostscript==0.7
 gunicorn==21.2.0
-idna==3.4
+idna==3.6
 inuits-jwt-auth==2.0.2
 itsdangerous==2.1.2
 Jinja2==3.1.2
