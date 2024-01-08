@@ -56,6 +56,16 @@ class CollectionApiService(metaclass=Singleton):
             raise Exception(req.text.strip())
         return req
 
+    def create_ticket(self, mediafile_name):
+        req = requests.post(
+            f"{self.collection_api_url}/tickets",
+            json={"filename": mediafile_name},
+            headers=self.headers,
+        )
+        if req.status_code != 201:
+            raise Exception(req.text.strip())
+        return req.text.strip().replace('"', "")
+
     def delete_mediafile(self, mediafile_id):
         req = requests.delete(
             f"{self.collection_api_url}/mediafiles/{mediafile_id}", headers=self.headers
