@@ -4,6 +4,7 @@ import os
 
 from flask import request, Response
 from flask_restful import abort, Resource
+from inuits_policy_based_auth import RequestContext
 from services.collection_api_service import CollectionApiService
 
 
@@ -121,6 +122,7 @@ class Ocr(Resource):
                 )
         return len(mediafile_ids)
 
+    @app.policy_factory.authenticate(RequestContext(request))
     def post(self):
         content = self.__get_request_body()
         self.__is_malformed_message(content, ["mediafile_id", "operation"])
