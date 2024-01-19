@@ -1,7 +1,20 @@
 import app
+import mimetypes
 
+from elody.exceptions import InvalidExtensionException
+from services.collection_api_service import CollectionApiService
 from services.ocr_service import OcrService
 from services.storage_api_service import StorageApiService
+
+ALLOWED_MIMETYPES = [
+    "image/png",
+    "image/jpg",
+    "image/jpeg",
+    "image/tiff",
+    "image/gif",
+    "image/webp",
+    "application/pdf",
+]
 
 
 def __get_ocr_output(
@@ -31,16 +44,52 @@ def __upload_ocr_output(ocr_output, id_new_mediafile, mediafile_name, content_ty
 @app.rabbit.queue("dams.ocr_request")
 def do_ocr(routing_key, body, message_id):
     app.logger.info("Message received:\tKey: {}".format(routing_key))
+    collection_api_service = CollectionApiService()
+    image_name = __get_imagename_and_validate(
+        body["mediafile_image_data"], body["operation"]
+    )
+    id_new_mediafile = __create_mediafile(
+        collection_api_service, body["mediafile_image_data"], body["operation"]
+    )
+    collection_api_service.add_ocr_output_to_parent_entities(
+        body["mediafile_image_data"][0]["_id"],
+        id_new_mediafile,
+        body["operation"],
+        body["lang"],
+    )
     ocr_output, mediafile_name, content_type = __get_ocr_output(
         body["operation"],
         body["mediafile_image_data"],
         body["lang"],
-        body["image_name"],
-        body["id_new_mediafile"],
+        image_name,
+        id_new_mediafile,
     )
-    __upload_ocr_output(
-        ocr_output, body["id_new_mediafile"], mediafile_name, content_type
-    )
+    __upload_ocr_output(ocr_output, id_new_mediafile, mediafile_name, content_type)
     app.logger.info(
-        "The ocr job is complete. You can now fetch the image with the given id"
+        f"The ocr job is complete. You can now fetch the image with the given id: {id_new_mediafile}"
     )
+
+
+def __get_imagename_and_validate(mediafile_image_data, operation):
+    image_name = mediafile_image_data[0].get("filename")
+    if not __is_mimetype_from_filename_valid(image_name, operation):
+        raise InvalidExtensionException("Extension is not valid")
+    return image_name
+
+
+def __is_mimetype_from_filename_valid(filename, operation):
+    mime = mimetypes.guess_type(filename, False)[0]
+    if mime == "application/pdf" and operation != "pdf":
+        return False
+    return mime in ALLOWED_MIMETYPES
+
+
+def __create_mediafile(collection_api_service, mediafile_image_data, operation):
+    try:
+        response = collection_api_service.create_mediafile(
+            mediafile_image_data, operation
+        )
+    except Exception as ex:
+        raise Exception(str(ex))
+    new_mediafile = response.json()
+    return new_mediafile.get("_key", new_mediafile["_id"])

@@ -1,5 +1,4 @@
 import app
-import mimetypes
 import os
 
 from flask import request, Response
@@ -9,37 +8,12 @@ from services.collection_api_service import CollectionApiService
 
 
 ALLOWED_LANGUAGES = ["eng", "nld", "fra"]
-ALLOWED_MIMETYPES = [
-    "image/png",
-    "image/jpg",
-    "image/jpeg",
-    "image/tiff",
-    "image/gif",
-    "image/webp",
-    "application/pdf",
-]
 
 
 class Ocr(Resource):
     def __init__(self):
         self.headers = {"Authorization": f'Bearer {os.getenv("STATIC_JWT")}'}
         self.collection_api_service = CollectionApiService()
-
-    def __create_mediafile(self, mediafile_image_data, operation):
-        try:
-            response = self.collection_api_service.create_mediafile(
-                mediafile_image_data, operation
-            )
-        except Exception as ex:
-            abort(400, message=str(ex))
-        new_mediafile = response.json()
-        return new_mediafile.get("_key", new_mediafile["_id"])
-
-    def __get_imagename_and_validate(self, mediafile_image_data, operation):
-        image_name = mediafile_image_data[0].get("filename")
-        if not self.__is_mimetype_from_filename_valid(image_name, operation):
-            abort(400, message="Extension is not valid")
-        return image_name
 
     def __get_mediafiles_and_check_existence(self, count, mediafile_id):
         try:
@@ -63,12 +37,6 @@ class Ocr(Resource):
                 message=f"Malformed request body. Mandatory fieds: {[field for field in fields]}",
             )
 
-    def __is_mimetype_from_filename_valid(self, filename, operation):
-        mime = mimetypes.guess_type(filename, False)[0]
-        if mime == "application/pdf" and operation != "pdf":
-            return False
-        return mime in ALLOWED_MIMETYPES
-
     def __is_wrong_operation(self, operation):
         if operation not in ["txt", "alto", "pdf"]:
             abort(
@@ -76,9 +44,7 @@ class Ocr(Resource):
                 message="Invalid operation. Possible operations are ['txt', 'alto', 'pdf']",
             )
 
-    def __send_message_to_queue_and_terminate_call(
-        self, body, id_new_mediafile, warning
-    ):
+    def __send_message_to_queue_and_terminate_call(self, body, warning):
         try:
             app.logger.info("Going to send message to queue")
             app.rabbit.send(body, routing_key="dams.ocr_request")
@@ -87,7 +53,7 @@ class Ocr(Resource):
         if warning:
             self.headers["Warning"] = warning
         return Response(
-            response=f"Ocr job is put on queue. Fetch it later with the mediafile id: [{id_new_mediafile}]",
+            response=f"Ocr job is put on queue.",
             status=200,
             headers=self.headers,
             mimetype="text/plain",
@@ -134,18 +100,10 @@ class Ocr(Resource):
         mediafile_image_data = self.__get_mediafiles_and_check_existence(
             count, mediafile_id
         )
-        image_name = self.__get_imagename_and_validate(mediafile_image_data, operation)
-        id_new_mediafile = self.__create_mediafile(mediafile_image_data, operation)
-        self.collection_api_service.add_ocr_output_to_parent_entities(
-            mediafile_id[0], id_new_mediafile
-        )
+
         body = {
             "operation": content["operation"],
-            "mediafile_image_data": mediafile_image_data,
             "lang": lang,
-            "id_new_mediafile": id_new_mediafile,
-            "image_name": image_name,
+            "mediafile_image_data": mediafile_image_data,
         }
-        return self.__send_message_to_queue_and_terminate_call(
-            body, id_new_mediafile, warning
-        )
+        return self.__send_message_to_queue_and_terminate_call(body, warning)

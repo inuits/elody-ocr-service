@@ -24,22 +24,32 @@ class CollectionApiService(metaclass=Singleton):
         return req
 
     def add_ocr_output_to_parent_entities(
-        self, original_mediafile_id, ocr_mediafile_id
+        self, original_mediafile_id, ocr_mediafile_id, operation, lang
     ):
         original_mediafile = self.get_mediafile(original_mediafile_id).json()
         unique_entities = list()
         for relation in original_mediafile.get("relations", list()):
             entity_id = relation.get("key")
-            if relation.get("type") == "belongsTo" and entity_id not in unique_entities:
+            if (
+                relation.get("type") == "belongsTo"
+                and entity_id not in unique_entities
+                and "is_ocr" not in relation
+            ):
                 payload = [
                     {
                         "key": ocr_mediafile_id,
                         "label": "hasMediafile",
                         "type": "belongsTo",
                         "is_ocr": True,
+                        "operation": operation,
+                        "lang": lang,
                     }
                 ]
                 url = f"{self.collection_api_url}/entities/{entity_id}/relations"
+                req = requests.patch(url, json=payload, headers=self.headers)
+                if req.status_code != 201:
+                    raise Exception(req.text.strip())
+                url = f"{self.collection_api_url}/mediafiles/{original_mediafile_id}/relations"
                 req = requests.patch(url, json=payload, headers=self.headers)
                 if req.status_code != 201:
                     raise Exception(req.text.strip())
