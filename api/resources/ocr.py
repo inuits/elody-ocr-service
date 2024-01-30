@@ -1,29 +1,20 @@
 import app
 import os
 
+from elody import Client
 from flask import request, Response
 from flask_restful import abort, Resource
 from inuits_policy_based_auth import RequestContext
-from services.collection_api_service import CollectionApiService
-
 
 ALLOWED_LANGUAGES = ["eng", "nld", "fra"]
+
+collection_api_url = os.getenv("COLLECTION_API_URL")
+elody_client = Client(collection_api_url, os.getenv("STATIC_JWT"))
 
 
 class Ocr(Resource):
     def __init__(self):
         self.headers = {"Authorization": f'Bearer {os.getenv("STATIC_JWT")}'}
-        self.collection_api_service = CollectionApiService()
-
-    def __get_mediafiles_and_check_existence(self, count, mediafile_id):
-        try:
-            mediafile_image_data = []
-            for i in range(count):
-                response = self.collection_api_service.get_mediafile(mediafile_id[i])
-                mediafile_image_data.append(response.json())
-        except Exception as ex:  # it doesn't exist
-            abort(400, message=str(ex))
-        return mediafile_image_data
 
     def __get_request_body(self):
         if request_body := request.get_json(silent=True):
@@ -93,12 +84,12 @@ class Ocr(Resource):
         content = self.__get_request_body()
         self.__is_malformed_message(content, ["mediafile_id", "operation"])
         operation = content["operation"]
-        mediafile_id = content["mediafile_id"]
+        mediafile_ids = content["mediafile_id"]
         self.__is_wrong_operation(operation)
         lang, warning = self.__validate_language(request.args.get("lang"))
-        count = self.__validate_mediafiles(mediafile_id, operation)
-        mediafile_image_data = self.__get_mediafiles_and_check_existence(
-            count, mediafile_id
+        self.__validate_mediafiles(mediafile_ids, operation)
+        mediafile_image_data = elody_client.get_mediafiles_and_check_existence(
+            mediafile_ids
         )
 
         body = {

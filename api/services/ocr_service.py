@@ -4,6 +4,7 @@ import multiprocessing
 import os
 import pytesseract
 
+from elody import Client
 from fpdf import FPDF
 from io import BytesIO
 from pathlib import Path
@@ -16,6 +17,9 @@ from services.storage_api_service import StorageApiService
 CLIENT_PDF_FILENAME = str(os.getenv("CLIENT_PDF_FILENAME", False))
 CLIENT_IMAGE_PATH = str(os.getenv("CLIENT_IMAGE_PATH", False))
 CLIENT_PDF_PATH = str(os.getenv("CLIENT_PDF_PATH", False))
+
+collection_api_url = os.getenv("COLLECTION_API_URL")
+elody_client = Client(collection_api_url, os.getenv("STATIC_JWT"))
 
 
 class OcrService(metaclass=Singleton):
@@ -75,7 +79,7 @@ class OcrService(metaclass=Singleton):
         try:
             img_data = self.storage_api_service.download_image(image_name)
         except Exception as ex:
-            self.collection_api_service.delete_mediafile(id_new_mediafile)
+            elody_client.delete_object("mediafiles", id_new_mediafile)
             app.logger.info("The created mediafile is deleted due to an error:")
             app.logger.error(
                 f'"The ocr function failed during downloading the image in the storage api:" {ex}'
@@ -86,7 +90,7 @@ class OcrService(metaclass=Singleton):
                 mediafile_image_data[0].get("original_filename").split(".")[0] + ext
             )
         except Exception as ex:
-            self.collection_api_service.delete_mediafile(id_new_mediafile)
+            elody_client.delete_object("mediafiles", id_new_mediafile)
             app.logger.info("The created mediafile is deleted due to an error:")
             app.logger.error(
                 f"The ocr function failed during running tesseract en getting the filename: {ex}"
@@ -137,7 +141,7 @@ class OcrService(metaclass=Singleton):
             try:
                 img_data = self.storage_api_service.download_image(images[i])
             except Exception as ex:
-                self.collection_api_service.delete_mediafile(id_new_mediafile)
+                elody_client.delete_object("mediafiles", id_new_mediafile)
                 app.logger.info("The created mediafile is deleted due to an error:")
                 app.logger.error(
                     f'"The ocr function failed during downloading the image in the storage api:" {ex}'
@@ -152,7 +156,7 @@ class OcrService(metaclass=Singleton):
                 with open(pdfs[i - not_valid_counter], "wb") as binary_pdf:
                     binary_pdf.write(output)
             except Exception as ex:
-                self.collection_api_service.delete_mediafile(id_new_mediafile)
+                elody_client.delete_object("mediafiles", id_new_mediafile)
                 app.logger.info("The created mediafile is deleted due to an error:")
                 app.logger.error(
                     f'"The ocr function failed during running tesseract and writing the output:" {ex}'
@@ -169,7 +173,7 @@ class OcrService(metaclass=Singleton):
             try:
                 img_data = self.storage_api_service.download_image(images[i])
             except Exception as ex:
-                self.collection_api_service.delete_mediafile(id_new_mediafile)
+                elody_client.delete_object("mediafiles", id_new_mediafile)
                 app.logger.info("The created mediafile is deleted due to an error:")
                 app.logger.error(
                     f'"The ocr function failed during downloading the image in the storage api:" {ex}'
@@ -224,7 +228,7 @@ class OcrService(metaclass=Singleton):
         try:
             self.create_pdf_with_ghostscript(images, lang, id_new_mediafile)
         except Exception as ex:
-            self.collection_api_service.delete_mediafile(id_new_mediafile)
+            elody_client.delete_object("mediafiles", id_new_mediafile)
             app.logger.info("The created mediafile is deleted due to an error:")
             app.logger.error(f"Ghostscript failed: {ex}")
         try:
@@ -233,7 +237,7 @@ class OcrService(metaclass=Singleton):
             )
             return open(CLIENT_PDF_FILENAME, "rb"), mediafile_name, "application/pdf"
         except Exception as ex:
-            self.collection_api_service.delete_mediafile(id_new_mediafile)
+            elody_client.delete_object("mediafiles", id_new_mediafile)
             app.logger.info("The created mediafile is deleted due to an error:")
             app.logger.error(f'"In ocr_service - The ocr function failed with:" {ex}')
         finally:

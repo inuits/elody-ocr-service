@@ -1,15 +1,16 @@
 import os
 import requests
 
-from services.collection_api_service import CollectionApiService
+from elody import Client
 from singleton import Singleton
 
+collection_api_url = os.getenv("COLLECTION_API_URL")
+elody_client = Client(collection_api_url, os.getenv("STATIC_JWT"))
 
 class StorageApiService(metaclass=Singleton):
     def __init__(self):
         self.storage_api_url = os.getenv("STORAGE_API_URL")
         self.headers = {"Authorization": f'Bearer {os.getenv("STATIC_JWT")}'}
-        self.collection_api_service = CollectionApiService()
 
     def download_image(self, image_name):
         req = requests.get(
@@ -21,7 +22,7 @@ class StorageApiService(metaclass=Singleton):
 
     def upload_ocr(self, ocr_output, id_mediafile, mediafile_name, content_type):
         self.headers["Content-Type"] = content_type
-        ticket_id = self.collection_api_service.create_ticket(mediafile_name)
+        ticket_id = elody_client.create_ticket(mediafile_name)
         req = requests.post(
             f"{self.storage_api_url}/upload-with-ticket/{mediafile_name}?id={id_mediafile}&ticket_id={ticket_id}",
             data=ocr_output,

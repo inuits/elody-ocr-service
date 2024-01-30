@@ -1,6 +1,8 @@
 import app
 import mimetypes
+import os
 
+from elody import Client
 from elody.exceptions import InvalidExtensionException
 from services.collection_api_service import CollectionApiService
 from services.ocr_service import OcrService
@@ -15,6 +17,9 @@ ALLOWED_MIMETYPES = [
     "image/webp",
     "application/pdf",
 ]
+
+collection_api_url = os.getenv("COLLECTION_API_URL")
+elody_client = Client(collection_api_url, os.getenv("STATIC_JWT"))
 
 
 def __get_ocr_output(
@@ -49,7 +54,7 @@ def do_ocr(routing_key, body, message_id):
         body["mediafile_image_data"], body["operation"]
     )
     id_new_mediafile = __create_mediafile(
-        collection_api_service, body["mediafile_image_data"], body["operation"]
+        body["mediafile_image_data"], body["operation"]
     )
     collection_api_service.add_ocr_output_to_parent_entities(
         body["mediafile_image_data"][0]["_id"],
@@ -84,11 +89,13 @@ def __is_mimetype_from_filename_valid(filename, operation):
     return mime in ALLOWED_MIMETYPES
 
 
-def __create_mediafile(collection_api_service, mediafile_image_data, operation):
+def __create_mediafile(mediafile_image_data, operation):
     try:
-        response = collection_api_service.create_mediafile(
-            mediafile_image_data, operation
+        filename = (
+            mediafile_image_data[0]["original_filename"].split(".")[0]
+            + f"-ocr.{operation}"
         )
+        response = elody_client.create_mediafile_with_filename(filename)
     except Exception as ex:
         raise Exception(str(ex))
     new_mediafile = response.json()

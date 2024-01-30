@@ -3,11 +3,16 @@ import difflib
 import os
 
 from datetime import datetime
+from elody import Client
 from flask import request, Response
 from flask_restful import abort, Resource
 from inuits_policy_based_auth import RequestContext
 from services.collection_api_service import CollectionApiService
 from services.storage_api_service import StorageApiService
+
+
+collection_api_url = os.getenv("COLLECTION_API_URL")
+elody_client = Client(collection_api_url, os.getenv("STATIC_JWT"))
 
 
 class OcrCorrection(Resource):
@@ -43,7 +48,7 @@ class OcrCorrection(Resource):
 
     def __get_mediafile_and_check_existence(self, mediafile_id):
         try:
-            response = self.collection_api_service.get_mediafile(mediafile_id)
+            response = elody_client.get_object("mediafiles", mediafile_id)
         except Exception as ex:  # it doesn't exist
             abort(400, message=str(ex))
         return response.json()

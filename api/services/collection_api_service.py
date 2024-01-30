@@ -2,7 +2,11 @@ import app
 import requests
 import os
 
+from elody import Client
 from singleton import Singleton
+
+collection_api_url = os.getenv("COLLECTION_API_URL")
+elody_client = Client(collection_api_url, os.getenv("STATIC_JWT"))
 
 
 class CollectionApiService(metaclass=Singleton):
@@ -26,7 +30,9 @@ class CollectionApiService(metaclass=Singleton):
     def add_ocr_output_to_parent_entities(
         self, original_mediafile_id, ocr_mediafile_id, operation, lang
     ):
-        original_mediafile = self.get_mediafile(original_mediafile_id).json()
+        original_mediafile = elody_client.get_object(
+            "mediafiles", original_mediafile_id
+        )
         unique_entities = list()
         for relation in original_mediafile.get("relations", list()):
             entity_id = relation.get("key")
@@ -53,42 +59,3 @@ class CollectionApiService(metaclass=Singleton):
                 req = requests.patch(url, json=payload, headers=self.headers)
                 if req.status_code != 201:
                     raise Exception(req.text.strip())
-
-    def create_mediafile(self, mediafile, operation):
-        filename = mediafile[0]["original_filename"].split(".")[0] + f"-ocr.{operation}"
-        data = {"filename": filename}
-        req = requests.post(
-            f"{self.collection_api_url}/mediafiles",
-            json=data,
-            headers=self.headers,
-        )
-        if req.status_code != 201:
-            raise Exception(req.text.strip())
-        return req
-
-    def create_ticket(self, mediafile_name):
-        req = requests.post(
-            f"{self.collection_api_url}/tickets",
-            json={"filename": mediafile_name},
-            headers=self.headers,
-        )
-        if req.status_code != 201:
-            raise Exception(req.text.strip())
-        return req.text.strip().replace('"', "")
-
-    def delete_mediafile(self, mediafile_id):
-        req = requests.delete(
-            f"{self.collection_api_url}/mediafiles/{mediafile_id}", headers=self.headers
-        )
-        if req.status_code != 204:
-            raise Exception(req.text.strip())
-        return req
-
-    def get_mediafile(self, mediafile_id):
-        req = requests.get(
-            f"{self.collection_api_url}/mediafiles/{mediafile_id}",
-            headers=self.headers,
-        )
-        if req.status_code != 200:
-            raise Exception(req.text.strip())
-        return req
