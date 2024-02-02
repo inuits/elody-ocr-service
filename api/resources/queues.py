@@ -48,7 +48,7 @@ def __upload_ocr_output(ocr_output, id_new_mediafile, mediafile_name, content_ty
 
 @app.rabbit.queue("dams.ocr_request")
 def do_ocr(routing_key, body, message_id):
-    app.logger.info("Message received:\tKey: {}".format(routing_key))
+    body = body["data"]
     collection_api_service = CollectionApiService()
     image_name = __get_imagename_and_validate(
         body["mediafile_image_data"], body["operation"]

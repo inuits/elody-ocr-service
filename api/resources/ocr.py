@@ -2,6 +2,7 @@ import app
 import os
 
 from elody import Client
+from elody.util import signal_do_ocr
 from flask import request, Response
 from flask_restful import abort, Resource
 from inuits_policy_based_auth import RequestContext
@@ -38,7 +39,7 @@ class Ocr(Resource):
     def __send_message_to_queue_and_terminate_call(self, body, warning):
         try:
             app.logger.info("Going to send message to queue")
-            app.rabbit.send(body, routing_key="dams.ocr_request")
+            signal_do_ocr(app.rabbit, body)
         except Exception as ex:
             abort(400, f"Exception at queue: {str(ex)}")
         if warning:

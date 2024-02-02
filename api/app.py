@@ -1,3 +1,4 @@
+import importlib
 import json
 import logging
 import os
@@ -10,7 +11,6 @@ from flask_swagger_ui import get_swaggerui_blueprint
 from healthcheck import HealthCheck
 from inuits_policy_based_auth import PolicyFactory
 from job_helper.job_extension import JobExtension
-from rabbitmq_pika_flask import RabbitMQ
 
 if os.getenv("SENTRY_ENABLED", False) in ["True", "true", True]:
     import sentry_sdk
@@ -38,7 +38,29 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-rabbit = RabbitMQ()
+amqp_module = importlib.import_module(os.getenv("AMQP_MANAGER", "amqpstorm_flask"))
+auto_delete_exchange = os.getenv("AUTO_DELETE_EXCHANGE", False) in [
+    1,
+    "1",
+    True,
+    "True",
+    "true",
+]
+durable_exchange = os.getenv("DURABLE_EXCHANGE", True) in [1, "1", True, "True", "true"]
+passive_exchange = os.getenv("PASSIVE_EXCHANGE", False) in [
+    1,
+    "1",
+    True,
+    "True",
+    "true",
+]
+rabbit = amqp_module.RabbitMQ(
+    exchange_params=amqp_module.ExchangeParams(
+        auto_delete=auto_delete_exchange,
+        durable=durable_exchange,
+        passive=passive_exchange,
+    )
+)
 rabbit.init_app(app, "basic", json.loads, json.dumps)
 
 jobs_extension = JobExtension(rabbit)
