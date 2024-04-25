@@ -76,7 +76,7 @@ def do_ocr(routing_key, body, message_id):
 
 
 def __get_imagename_and_validate(mediafile_image_data, operation):
-    image_name = mediafile_image_data[0].get("filename")
+    image_name = mediafile_image_data[0].get("original_identifier")
     if not __is_mimetype_from_filename_valid(image_name, operation):
         raise InvalidExtensionException("Extension is not valid")
     return image_name
@@ -91,11 +91,11 @@ def __is_mimetype_from_filename_valid(filename, operation):
 
 def __create_mediafile(mediafile_image_data, operation):
     try:
-        filename = (
-            mediafile_image_data[0]["original_filename"].split(".")[0]
+        identifier = (
+            mediafile_image_data[0]["identifier"].split(".")[0]
             + f"-ocr.{operation}"
         )
-        response = elody_client.create_mediafile_with_filename(filename)
+        response = elody_client.create_mediafile_with_filename(identifier)
     except Exception as ex:
         raise Exception(str(ex))
     new_mediafile = response.json()
