@@ -224,7 +224,7 @@ class OcrService(metaclass=Singleton):
     def ocr_to_pdf(self, mediafile_image_data, lang, image_name, id_new_mediafile):
         images = []
         for i in range(len(mediafile_image_data)):
-            images.append(mediafile_image_data[i].get("filename"))
+            images.append(mediafile_image_data[i].get("identifier"))
         try:
             self.create_pdf_with_ghostscript(images, lang, id_new_mediafile)
         except Exception as ex:
@@ -233,7 +233,7 @@ class OcrService(metaclass=Singleton):
             app.logger.error(f"Ghostscript failed: {ex}")
         try:
             mediafile_name = (
-                mediafile_image_data[0].get("original_filename").split(".")[0] + ".pdf"
+                mediafile_image_data[0].get("original_identifier").split(".")[0] + ".pdf"
             )
             return open(CLIENT_PDF_FILENAME, "rb"), mediafile_name, "application/pdf"
         except Exception as ex:
