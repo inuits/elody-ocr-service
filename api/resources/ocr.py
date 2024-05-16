@@ -79,7 +79,7 @@ class Ocr(Resource):
                 )
         return len(mediafile_ids)
 
-    @app.policy_factory.authenticate(RequestContext(request))
+    # @app.policy_factory.authenticate(RequestContext(request))
     def post(self):
         content = self.__get_request_body()
         self.__is_malformed_message(content, ["mediafile_id", "operation"])
