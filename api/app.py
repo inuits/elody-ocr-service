@@ -8,6 +8,7 @@ from flask import Flask
 from flask_restful import Api
 from flask_swagger_ui import get_swaggerui_blueprint
 from healthcheck import HealthCheck
+from logging_elody.log import log
 from importlib import import_module
 from inuits_policy_based_auth import PolicyFactory
 from job_helper.job_extension import JobExtension

@@ -1,0 +1,57 @@
+from abc import ABC, abstractmethod
+
+class BaseObjectConfiguration(ABC):
+    SCHEMA_TYPE = "elody"
+    SCHEMA_VERSION = 1
+
+    @abstractmethod
+    def crud(self):
+        return {
+            "collection": "entities",
+            "collection_history": "history",
+            "creator": lambda post_body, **kwargs: post_body,  # pyright: ignore
+            "nested_matcher_builder": lambda object_lists, keys_info, value: self.__build_nested_matcher(
+                object_lists, keys_info, value
+            ),
+            "post_crud_hook": lambda **kwargs: None,  # pyright: ignore
+            "pre_crud_hook": lambda **kwargs: None,  # pyright: ignore
+        }
+
+    @abstractmethod
+    def document_info(self):
+        return {"object_lists": {"metadata": "key", "relations": "type"}}
+
+    @abstractmethod
+    def logging(self, flat_item, **kwargs):
+        return {"info_labels": {}, "loki_indexed_info_labels": {}}
+
+    @abstractmethod
+    def serialization(self, from_format, to_format):
+        def serializer(item, **_):
+            return item
+
+        return serializer
+
+    @abstractmethod
+    def validation(self):
+        return "schema", {}
+
+    def __build_nested_matcher(self, object_lists, keys_info, value, index=0):
+        if index == 0 and not any(info["is_object_list"] for info in keys_info):
+            return {".".join(info["key"] for info in keys_info): value}
+
+        info = keys_info[index]
+
+        if info["is_object_list"]:
+            nested_matcher = self.__build_nested_matcher(
+                object_lists, keys_info, value, index + 1
+            )
+            elem_match = {
+                "$elemMatch": {
+                    object_lists[info["key"]]: info["object_key"],
+                    keys_info[index + 1]["key"]: nested_matcher,
+                }
+            }
+            return elem_match if index > 0 else {info["key"]: {"$all": [elem_match]}}
+
+        return value
