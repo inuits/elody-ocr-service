@@ -5,6 +5,7 @@ from elody import Client
 from flask import request, Response
 from flask_restful import abort, Resource
 from inuits_policy_based_auth import RequestContext
+from services.collection_api_service import CollectionApiService
 
 ALLOWED_LANGUAGES = ["eng", "nld", "fra"]
 
@@ -15,17 +16,23 @@ elody_client = Client(collection_api_url, os.getenv("STATIC_JWT"))
 class Ocr(Resource):
     def __init__(self):
         self.headers = {"Authorization": f'Bearer {os.getenv("STATIC_JWT")}'}
+        self.collection_api_service = CollectionApiService()
 
     def __get_request_body(self):
         if request_body := request.get_json(silent=True):
             return request_body
         abort(405, message="Invalid input")
 
-    def __is_malformed_message(self, data, fields):
+    def __is_malformed_message(self, data, fields, one_required_in_fields):
         if not all(x in data for x in fields):
             abort(
                 405,
                 message=f"Malformed request body. Mandatory fieds: {[field for field in fields]}",
+            )
+        if sum(d in one_required_in_fields for d in data) == 0:
+            abort(
+                405,
+                message=f"Malformed request body. At least one of these fieds must be present: {[field for field in one_required_in_fields]}",
             )
 
     def __is_wrong_operation(self, operation):
@@ -57,6 +64,12 @@ class Ocr(Resource):
             warning = '299, "Arbitrary information that should be presented to a user or logged.", "For now the ocr tool used ENG as default language. You can specify the language with the key [lang] and possible values: eng, ned, fra'
         return lang, warning
 
+    def __validate_asset_id(self, asset_id):
+        if not isinstance(asset_id, str):
+            abort(
+                400, message="Malformed request body. Send the asset id in a string"
+            )
+
     def __validate_mediafiles(self, mediafile_ids, operation):
         if not isinstance(mediafile_ids, list):
             abort(
@@ -82,16 +95,20 @@ class Ocr(Resource):
     @app.policy_factory.authenticate(RequestContext(request))
     def post(self):
         content = self.__get_request_body()
-        self.__is_malformed_message(content, ["mediafile_id", "operation"])
+        self.__is_malformed_message(content, ["operation"], ["mediafile_id", "asset_id"])
         operation = content["operation"]
-        mediafile_ids = content["mediafile_id"]
+        mediafile_ids = content.get("mediafile_id", False)
+        asset_id = content.get("asset_id", False)
         self.__is_wrong_operation(operation)
         lang, warning = self.__validate_language(request.args.get("lang"))
-        self.__validate_mediafiles(mediafile_ids, operation)
-        mediafile_image_data = elody_client.get_mediafiles_and_check_existence(
-            mediafile_ids
-        )
-
+        if asset_id and mediafile_ids is False:
+            self.__validate_asset_id(asset_id)
+            mediafile_image_data = self.collection_api_service.get_mediafiles_from_entity(asset_id)
+        else:
+            self.__validate_mediafiles(mediafile_ids, operation)
+            mediafile_image_data = elody_client.get_mediafiles_and_check_existence(
+                mediafile_ids
+            )
         body = {
             "operation": content["operation"],
             "lang": lang,
