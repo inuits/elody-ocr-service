@@ -67,3 +67,17 @@ class CollectionApiService(metaclass=Singleton):
             raise Exception(req.text.strip())
         content = req.json()
         return content["results"]
+
+    def get_institution_from_asset(self, asset_id):
+        req = requests.get(
+            f"{self.collection_api_url}/entities/{asset_id}",
+            headers=self.headers,
+        )
+
+        asset = req.json()
+        institution_id = ""
+        for relation in asset.get("relations", []):
+            if relation.get("type") == "hasInstitution":
+                institution_id = relation.get("key")
+                
+        return institution_id

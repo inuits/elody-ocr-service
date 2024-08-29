@@ -50,11 +50,19 @@ def __upload_ocr_output(ocr_output, id_new_mediafile, mediafile_name, content_ty
 def do_ocr(routing_key, body, message_id):
     app.logger.info("Message received:\tKey: {}".format(routing_key))
     collection_api_service = CollectionApiService()
+    original_mediafile = body["mediafile_image_data"][0]
+    institution_id = ""
+    for original_mediafile_relation in original_mediafile.get("relations", []):
+        if original_mediafile_relation.get("type") == "belongsTo":
+            if not institution_id:
+                institution_id = collection_api_service.get_institution_from_asset(
+                    original_mediafile_relation.get("key")
+                )
     image_name = __get_imagename_and_validate(
         body["mediafile_image_data"], body["operation"]
     )
     id_new_mediafile = __create_mediafile(
-        body["mediafile_image_data"], body["operation"]
+        body["mediafile_image_data"], body["operation"], institution_id
     )
     collection_api_service.add_ocr_output_to_parent_entities(
         body["mediafile_image_data"][0]["_id"],
@@ -89,13 +97,13 @@ def __is_mimetype_from_filename_valid(filename, operation):
     return mime in ALLOWED_MIMETYPES
 
 
-def __create_mediafile(mediafile_image_data, operation):
+def __create_mediafile(mediafile_image_data, operation, institution_id):
     try:
         filename = (
             mediafile_image_data[0]["original_filename"].split(".")[0]
             + f"-ocr.{operation}"
         )
-        response = elody_client.create_mediafile_with_filename(filename)
+        response = elody_client.create_mediafile_with_filename(filename, institution_id)
     except Exception as ex:
         raise Exception(str(ex))
     new_mediafile = response.json()
