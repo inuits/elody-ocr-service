@@ -5,6 +5,7 @@ import os
 import pytesseract
 
 from elody import Client
+from elody.job import start_job, finish_job, fail_job
 from fpdf import FPDF
 from io import BytesIO
 from pathlib import Path
@@ -27,6 +28,8 @@ class OcrService(metaclass=Singleton):
         self.headers = {"Authorization": f'Bearer {os.getenv("STATIC_JWT")}'}
         self.storage_api_service = StorageApiService()
         self.collection_api_service = CollectionApiService()
+        self.main_job_id = ""
+        self.get_rabbit = lambda: app.rabbit
 
     def __add_txt_to_metadata(self, mediafile_image_data, ocr_output):
         metadata = mediafile_image_data.get("metadata")
@@ -189,13 +192,24 @@ class OcrService(metaclass=Singleton):
         return pdfs
 
     def ocr(self, operation, mediafile_image_data, lang, image_name, id_new_mediafile):
+        self.main_job_id = start_job(
+            f"mediafile_name: {image_name} - mediafile_id: {id_new_mediafile} - {operation} - {lang}",
+            f"Start OCR",
+            get_rabbit=self.get_rabbit
+        )
         operations = {
             "txt": self.ocr_to_txt,
             "alto": self.ocr_to_alto,
             "pdf": self.ocr_to_pdf,
         }
         func = operations.get(operation)
-        return func(mediafile_image_data, lang, image_name, id_new_mediafile)
+        try:
+            ocr_result = func(mediafile_image_data, lang, image_name, id_new_mediafile)
+        except Exception as ex:
+            message = f"Starting import failed with: {ex}"
+            fail_job(self.main_job_id, message, get_rabbit=self.get_rabbit)
+        finish_job(self.main_job_id, get_rabbit=self.get_rabbit)
+        return ocr_result
 
     def ocr_to_alto(self, mediafile_image_data, lang, image_name, id_new_mediafile):
         response = self.convert_image_to_data(
