@@ -45,7 +45,7 @@ class CollectionApiService(metaclass=Singleton):
                     {
                         "key": ocr_mediafile_id,
                         "label": "hasMediafile",
-                        "type": "belongsTo",
+                        "type": "hasMediafile",
                         "is_ocr": True,
                         "operation": operation,
                         "lang": lang,
