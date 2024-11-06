@@ -100,7 +100,7 @@ class Ocr(Resource):
         mediafile_ids = content.get("mediafile_id", False)
         asset_id = content.get("asset_id", False)
         self.__is_wrong_operation(operation)
-        lang, warning = self.__validate_language(request.args.get("lang"))
+        lang, warning = self.__validate_language(request.args.get("language"))
         if asset_id and mediafile_ids is False:
             self.__validate_asset_id(asset_id)
             mediafile_image_data = self.collection_api_service.get_mediafiles_from_entity(asset_id)
