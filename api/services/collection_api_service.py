@@ -34,6 +34,16 @@ class CollectionApiService(metaclass=Singleton):
             "mediafiles", original_mediafile_id
         )
         unique_entities = list()
+        payload = [
+            {
+                "key": ocr_mediafile_id,
+                "label": "hasMediafile",
+                "type": "hasMediafile",
+                "is_ocr": True,
+                "operation": operation,
+                "lang": lang,
+            }
+        ]
         for relation in original_mediafile.get("relations", list()):
             entity_id = relation.get("key")
             if (
@@ -41,25 +51,15 @@ class CollectionApiService(metaclass=Singleton):
                 and entity_id not in unique_entities
                 and "is_ocr" not in relation
             ):
-                payload = [
-                    {
-                        "key": ocr_mediafile_id,
-                        "label": "hasMediafile",
-                        "type": "hasMediafile",
-                        "is_ocr": True,
-                        "operation": operation,
-                        "lang": lang,
-                    }
-                ]
                 url = f"{self.collection_api_url}/entities/{entity_id}/relations"
                 req = requests.patch(url, json=payload, headers=self.headers)
                 if req.status_code != 201:
                     raise Exception(req.text.strip())
-                url = f"{self.collection_api_url}/mediafiles/{original_mediafile_id}/relations"
-                req = requests.patch(url, json=payload, headers=self.headers)
-                if req.status_code != 201:
-                    raise Exception(req.text.strip())
                 unique_entities.append(entity_id)
+        url = f"{self.collection_api_url}/mediafiles/{original_mediafile_id}/relations"
+        req = requests.patch(url, json=payload, headers=self.headers)
+        if req.status_code != 201:
+            raise Exception(req.text.strip())
 
     def get_mediafiles_from_entity(self, entity_id):
         url = f"{self.collection_api_url}/entities/{entity_id}/mediafiles"
