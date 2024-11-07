@@ -59,6 +59,7 @@ class CollectionApiService(metaclass=Singleton):
                 req = requests.patch(url, json=payload, headers=self.headers)
                 if req.status_code != 201:
                     raise Exception(req.text.strip())
+                unique_entities.append(entity_id)
 
     def get_mediafiles_from_entity(self, entity_id):
         url = f"{self.collection_api_url}/entities/{entity_id}/mediafiles"
