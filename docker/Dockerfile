@@ -1,5 +1,5 @@
 ### Base stage
-FROM python:3.11-alpine AS base-stage
+FROM python:3.12-alpine AS base-stage
 
 ENV FLASK_APP=app.py
 
@@ -13,14 +13,14 @@ RUN apk update && apk add --no-cache \
     tesseract-ocr-data-nld \
     wget
 
-RUN wget https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs10021/ghostscript-10.02.1.tar.gz && \
-    tar -zxf ghostscript-10.02.1.tar.gz && \
-    cd ghostscript-10.02.1/ && \
+RUN wget https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs10040/ghostscript-10.04.0.tar.gz && \
+    tar -zxf ghostscript-10.04.0.tar.gz && \
+    cd ghostscript-10.04.0/ && \
     ./configure --prefix=/usr && \
     make so -j$(($(nproc)+2)) && \
     make soinstall && \
     cd / && \
-    rm -rf ghostscript-10.02.1.tar.gz ghostscript-10.02.1/
+    rm -rf ghostscript-10.04.0.tar.gz ghostscript-10.04.0/
 
 RUN mkdir -p /usr/lib/tessdata/script && \
     wget https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/main/script/Latin.traineddata -O /usr/lib/tessdata/script/Latin.traineddata && \
