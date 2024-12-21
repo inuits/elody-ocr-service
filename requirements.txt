@@ -21,7 +21,7 @@ gunicorn==23.0.0
 idna==3.10
 inuits-policy-based-auth==10.0.1
 itsdangerous==2.2.0
-Jinja2==3.1.4
+Jinja2==3.1.5
 job-helper==1.2
 MarkupSafe==3.0.2
 packaging==24.2
