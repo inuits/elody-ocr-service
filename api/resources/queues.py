@@ -103,7 +103,9 @@ def __create_mediafile(mediafile_image_data, operation, institution_id):
             mediafile_image_data[0]["original_filename"].split(".")[0]
             + f"-ocr.{operation}"
         )
-        response = elody_client.create_mediafile_with_filename(filename, institution_id)
+        response = elody_client.create_mediafile_with_filename(
+            filename, technical_origin="ocr", institution_id=institution_id
+        )
     except Exception as ex:
         raise Exception(str(ex))
     new_mediafile = response.json()
