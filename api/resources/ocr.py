@@ -2,6 +2,7 @@ import app
 import os
 
 from elody import Client
+from elody.job import init_job
 from flask import request, Response
 from flask_restful import abort, Resource
 from inuits_policy_based_auth import RequestContext
@@ -17,6 +18,7 @@ class Ocr(Resource):
     def __init__(self):
         self.headers = {"Authorization": f'Bearer {os.getenv("STATIC_JWT")}'}
         self.collection_api_service = CollectionApiService()
+        self.get_rabbit = lambda: app.rabbit
 
     def __get_request_body(self):
         if request_body := request.get_json(silent=True):
@@ -109,9 +111,20 @@ class Ocr(Resource):
             mediafile_image_data = elody_client.get_mediafiles_and_check_existence(
                 mediafile_ids
             )
+        job_name = ""
+        if asset_id:
+            job_name = f"OCR for asset_id: {asset_id} - {operation} - {lang}"
+        if mediafile_ids:
+            job_name = f"OCR for mediafile_ids: {mediafile_ids} - {operation} - {lang}"
+        main_job_id = init_job(
+            job_name,
+            f"OCR",
+            get_rabbit=self.get_rabbit
+        )
         body = {
             "operation": content["operation"],
             "lang": lang,
             "mediafile_image_data": mediafile_image_data,
+            "main_job_id": main_job_id
         }
         return self.__send_message_to_queue_and_terminate_call(body, warning)

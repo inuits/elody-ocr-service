@@ -5,7 +5,7 @@ import os
 import pytesseract
 
 from elody import Client
-from elody.job import start_job, finish_job, fail_job
+from elody.job import init_job, start_job, finish_job, fail_job
 from fpdf import FPDF
 from io import BytesIO
 from pathlib import Path
@@ -191,12 +191,16 @@ class OcrService(metaclass=Singleton):
             pdfs.append(pdfname)
         return pdfs
 
-    def ocr(self, operation, mediafile_image_data, lang, image_name, id_new_mediafile):
-        self.main_job_id = start_job(
+    def ocr(self, operation, mediafile_image_data, lang, image_name, id_new_mediafile, main_job_id=None):
+        self.main_job_id = main_job_id
+        ocr_job_id = init_job(
             f"mediafile_name: {image_name} - mediafile_id: {id_new_mediafile} - {operation} - {lang}",
-            f"Start OCR",
-            get_rabbit=self.get_rabbit
+            f"Start OCR {operation}",
+            get_rabbit=self.get_rabbit,
+            parent_id=self.main_job_id
         )
+        start_job(self.main_job_id, get_rabbit=self.get_rabbit)
+        start_job(ocr_job_id, get_rabbit=self.get_rabbit)
         operations = {
             "txt": self.ocr_to_txt,
             "alto": self.ocr_to_alto,
@@ -207,7 +211,9 @@ class OcrService(metaclass=Singleton):
             ocr_result = func(mediafile_image_data, lang, image_name, id_new_mediafile)
         except Exception as ex:
             message = f"Starting import failed with: {ex}"
+            fail_job(ocr_job_id, message, get_rabbit=self.get_rabbit)
             fail_job(self.main_job_id, message, get_rabbit=self.get_rabbit)
+        finish_job(ocr_job_id, get_rabbit=self.get_rabbit)
         finish_job(self.main_job_id, get_rabbit=self.get_rabbit)
         return ocr_result
 

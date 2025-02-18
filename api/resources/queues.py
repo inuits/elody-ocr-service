@@ -23,12 +23,22 @@ elody_client = Client(collection_api_url, os.getenv("STATIC_JWT"))
 
 
 def __get_ocr_output(
-    operation, mediafile_image_data, lang, image_name, id_new_mediafile
+    operation,
+    mediafile_image_data,
+    lang,
+    image_name,
+    id_new_mediafile,
+    main_job_id=None,
 ):
     ocr_service = OcrService()
     try:
         return ocr_service.ocr(
-            operation, mediafile_image_data, lang, image_name, id_new_mediafile
+            operation,
+            mediafile_image_data,
+            lang,
+            image_name,
+            id_new_mediafile,
+            main_job_id,
         )
     except Exception as ex:
         app.logger.error(f'"In queues - The ocr function failed with:" {ex}')
@@ -51,6 +61,7 @@ def do_ocr(routing_key, body, message_id):
     app.logger.info("Message received:\tKey: {}".format(routing_key))
     collection_api_service = CollectionApiService()
     original_mediafile = body["mediafile_image_data"][0]
+    main_job_id = body.get("main_job_id")
     institution_id = ""
     for original_mediafile_relation in original_mediafile.get("relations", []):
         if original_mediafile_relation.get("type") == "belongsTo":
@@ -76,6 +87,7 @@ def do_ocr(routing_key, body, message_id):
         body["lang"],
         image_name,
         id_new_mediafile,
+        main_job_id,
     )
     __upload_ocr_output(ocr_output, id_new_mediafile, mediafile_name, content_type)
     app.logger.info(
