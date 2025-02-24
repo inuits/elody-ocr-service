@@ -69,34 +69,59 @@ def do_ocr(routing_key, body, message_id):
                 institution_id = collection_api_service.get_institution_from_asset(
                     original_mediafile_relation.get("key")
                 )
-    image_name = __get_imagename_and_validate(
-        body["mediafile_image_data"], body["operation"]
-    )
-    id_new_mediafile = __create_mediafile(
-        body["mediafile_image_data"], body["operation"], institution_id
-    )
-    collection_api_service.add_ocr_output_to_parent_entities(
-        body["mediafile_image_data"][0]["_id"],
-        id_new_mediafile,
-        body["operation"],
-        body["lang"],
-    )
-    ocr_output, mediafile_name, content_type = __get_ocr_output(
-        body["operation"],
-        body["mediafile_image_data"],
-        body["lang"],
-        image_name,
-        id_new_mediafile,
-        main_job_id,
-    )
-    __upload_ocr_output(ocr_output, id_new_mediafile, mediafile_name, content_type)
-    app.logger.info(
-        f"The ocr job is complete. You can now fetch the image with the given id: {id_new_mediafile}"
-    )
+    if body["operation"] in ["txt", "alto"]:
+        for image in body["mediafile_image_data"]:
+            image_name = __get_imagename_and_validate(image, body["operation"])
+            id_new_mediafile = __create_mediafile(
+                image, body["operation"], institution_id
+            )
+            collection_api_service.add_ocr_output_to_parent_entities(
+                image["_id"],
+                id_new_mediafile,
+                body["operation"],
+                body["lang"],
+            )
+            ocr_output, mediafile_name, content_type = __get_ocr_output(
+                body["operation"],
+                [image],
+                body["lang"],
+                image_name,
+                id_new_mediafile,
+                main_job_id,
+            )
+            __upload_ocr_output(
+                ocr_output, id_new_mediafile, mediafile_name, content_type
+            )
+            app.logger.info(
+                f"The ocr job is complete. You can now fetch the image with the given id: {id_new_mediafile}"
+            )
+    if body["operation"] == "pdf":
+        image_name = "asset-pdf"
+        id_new_mediafile = __create_mediafile(
+            body["mediafile_image_data"][0], body["operation"], institution_id
+        )
+        collection_api_service.add_ocr_output_to_parent_entities(
+            body["mediafile_image_data"][0]["_id"],
+            id_new_mediafile,
+            body["operation"],
+            body["lang"],
+        )
+        ocr_output, mediafile_name, content_type = __get_ocr_output(
+            body["operation"],
+            body["mediafile_image_data"],
+            body["lang"],
+            image_name,
+            id_new_mediafile,
+            main_job_id,
+        )
+        __upload_ocr_output(ocr_output, id_new_mediafile, mediafile_name, content_type)
+        app.logger.info(
+            f"The ocr job is complete. You can now fetch the image with the given id: {id_new_mediafile}"
+        )
 
 
-def __get_imagename_and_validate(mediafile_image_data, operation):
-    image_name = mediafile_image_data[0].get("filename")
+def __get_imagename_and_validate(mediafile_image, operation):
+    image_name = mediafile_image.get("filename")
     if not __is_mimetype_from_filename_valid(image_name, operation):
         raise InvalidExtensionException("Extension is not valid")
     return image_name
@@ -109,11 +134,10 @@ def __is_mimetype_from_filename_valid(filename, operation):
     return mime in ALLOWED_MIMETYPES
 
 
-def __create_mediafile(mediafile_image_data, operation, institution_id):
+def __create_mediafile(mediafile_image, operation, institution_id):
     try:
         filename = (
-            mediafile_image_data[0]["original_filename"].split(".")[0]
-            + f"-ocr.{operation}"
+            mediafile_image["original_filename"].split(".")[0] + f"-ocr.{operation}"
         )
         response = elody_client.create_mediafile_with_filename(
             filename, technical_origin="ocr", institution_id=institution_id
