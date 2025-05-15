@@ -199,7 +199,6 @@ class OcrService(metaclass=Singleton):
             get_rabbit=self.get_rabbit,
             parent_id=self.main_job_id
         )
-        start_job(self.main_job_id, get_rabbit=self.get_rabbit)
         start_job(ocr_job_id, get_rabbit=self.get_rabbit)
         operations = {
             "txt": self.ocr_to_txt,
@@ -212,9 +211,7 @@ class OcrService(metaclass=Singleton):
         except Exception as ex:
             message = f"Starting import failed with: {ex}"
             fail_job(ocr_job_id, message, get_rabbit=self.get_rabbit)
-            fail_job(self.main_job_id, message, get_rabbit=self.get_rabbit)
         finish_job(ocr_job_id, get_rabbit=self.get_rabbit)
-        finish_job(self.main_job_id, get_rabbit=self.get_rabbit)
         return ocr_result
 
     def ocr_to_alto(self, mediafile_image_data, lang, image_name, id_new_mediafile):

@@ -105,12 +105,16 @@ class Ocr(Resource):
         lang, warning = self.__validate_language(request.args.get("language"))
         if asset_id and mediafile_ids is False:
             self.__validate_asset_id(asset_id)
-            mediafile_image_data = self.collection_api_service.get_mediafiles_from_entity(asset_id)
+            mediafiles = self.collection_api_service.get_mediafiles_from_entity(asset_id)
         else:
             self.__validate_mediafiles(mediafile_ids, operation)
-            mediafile_image_data = elody_client.get_mediafiles_and_check_existence(
+            mediafiles = elody_client.get_mediafiles_and_check_existence(
                 mediafile_ids
             )
+        mediafile_image_data = []
+        for mediafile in mediafiles:
+            if mediafile.get("technical_origin") == "original":
+                mediafile_image_data.append(mediafile)
         job_name = ""
         if asset_id:
             job_name = f"OCR for asset_id: {asset_id} - {operation} - {lang}"

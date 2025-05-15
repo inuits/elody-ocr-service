@@ -4,6 +4,7 @@ import os
 
 from elody import Client
 from elody.exceptions import InvalidExtensionException
+from elody.job import start_job, finish_job, fail_job
 from services.collection_api_service import CollectionApiService
 from services.ocr_service import OcrService
 from services.storage_api_service import StorageApiService
@@ -62,6 +63,7 @@ def do_ocr(routing_key, body, message_id):
     collection_api_service = CollectionApiService()
     original_mediafile = body["mediafile_image_data"][0]
     main_job_id = body.get("main_job_id")
+    start_job(main_job_id, get_rabbit=lambda: app.rabbit)
     institution_id = ""
     for original_mediafile_relation in original_mediafile.get("relations", []):
         if original_mediafile_relation.get("type") == "belongsTo":
@@ -118,6 +120,7 @@ def do_ocr(routing_key, body, message_id):
         app.logger.info(
             f"The ocr job is complete. You can now fetch the image with the given id: {id_new_mediafile}"
         )
+    finish_job(main_job_id, get_rabbit=lambda: app.rabbit)
 
 
 def __get_imagename_and_validate(mediafile_image, operation):
