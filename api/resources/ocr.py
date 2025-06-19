@@ -68,9 +68,7 @@ class Ocr(Resource):
 
     def __validate_asset_id(self, asset_id):
         if not isinstance(asset_id, str):
-            abort(
-                400, message="Malformed request body. Send the asset id in a string"
-            )
+            abort(400, message="Malformed request body. Send the asset id in a string")
 
     def __validate_mediafiles(self, mediafile_ids, operation):
         if not isinstance(mediafile_ids, list):
@@ -97,7 +95,9 @@ class Ocr(Resource):
     @app.policy_factory.authenticate(RequestContext(request))
     def post(self):
         content = self.__get_request_body()
-        self.__is_malformed_message(content, ["operation"], ["mediafile_id", "asset_id"])
+        self.__is_malformed_message(
+            content, ["operation"], ["mediafile_id", "asset_id"]
+        )
         operation = content["operation"]
         mediafile_ids = content.get("mediafile_id", False)
         asset_id = content.get("asset_id", False)
@@ -105,12 +105,12 @@ class Ocr(Resource):
         lang, warning = self.__validate_language(request.args.get("language"))
         if asset_id and mediafile_ids is False:
             self.__validate_asset_id(asset_id)
-            mediafiles = self.collection_api_service.get_mediafiles_from_entity(asset_id)
+            mediafiles = self.collection_api_service.get_mediafiles_from_entity(
+                asset_id
+            )
         else:
             self.__validate_mediafiles(mediafile_ids, operation)
-            mediafiles = elody_client.get_mediafiles_and_check_existence(
-                mediafile_ids
-            )
+            mediafiles = elody_client.get_mediafiles_and_check_existence(mediafile_ids)
         mediafile_image_data = []
         for mediafile in mediafiles:
             if mediafile.get("technical_origin") == "original":
@@ -120,15 +120,11 @@ class Ocr(Resource):
             job_name = f"OCR for asset_id: {asset_id} - {operation} - {lang}"
         if mediafile_ids:
             job_name = f"OCR for mediafile_ids: {mediafile_ids} - {operation} - {lang}"
-        main_job_id = init_job(
-            job_name,
-            f"OCR",
-            get_rabbit=self.get_rabbit
-        )
+        main_job_id = init_job(job_name, f"OCR", get_rabbit=self.get_rabbit)
         body = {
             "operation": content["operation"],
             "lang": lang,
             "mediafile_image_data": mediafile_image_data,
-            "main_job_id": main_job_id
+            "main_job_id": main_job_id,
         }
         return self.__send_message_to_queue_and_terminate_call(body, warning)

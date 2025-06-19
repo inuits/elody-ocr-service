@@ -63,10 +63,14 @@ class CollectionApiService(metaclass=Singleton):
             raise Exception(req.text.strip())
 
     def get_entity_type(self, entity_id):
-        return requests.get(
-            f"{self.collection_api_url}/entities/{entity_id}",
-            headers=self.headers,
-        ).json().get("type")
+        return (
+            requests.get(
+                f"{self.collection_api_url}/entities/{entity_id}",
+                headers=self.headers,
+            )
+            .json()
+            .get("type")
+        )
 
     def get_mediafiles_from_entity(self, entity_id):
         url = f"{self.collection_api_url}/entities/{entity_id}/mediafiles"
@@ -87,5 +91,5 @@ class CollectionApiService(metaclass=Singleton):
         for relation in asset.get("relations", []):
             if relation.get("type") == "hasInstitution":
                 institution_id = relation.get("key")
-                
+
         return institution_id

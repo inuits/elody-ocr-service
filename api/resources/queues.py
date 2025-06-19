@@ -1,11 +1,11 @@
 import app
 import mimetypes
 import os
+import requests
 
 from elody import Client
 from elody.exceptions import InvalidExtensionException
-from elody.job import start_job, finish_job, fail_job
-from services.collection_api_service import CollectionApiService
+from elody.job import start_job, finish_job
 from services.ocr_service import OcrService
 from services.storage_api_service import StorageApiService
 
@@ -60,28 +60,13 @@ def __upload_ocr_output(ocr_output, id_new_mediafile, mediafile_name, content_ty
 @app.rabbit.queue("dams.ocr_request")
 def do_ocr(routing_key, body, message_id):
     app.logger.info("Message received:\tKey: {}".format(routing_key))
-    collection_api_service = CollectionApiService()
-    original_mediafile = body["mediafile_image_data"][0]
     main_job_id = body.get("main_job_id")
     start_job(main_job_id, get_rabbit=lambda: app.rabbit)
-    institution_id = ""
-    for original_mediafile_relation in original_mediafile.get("relations", []):
-        if original_mediafile_relation.get("type") == "belongsTo":
-            if not institution_id:
-                institution_id = collection_api_service.get_institution_from_asset(
-                    original_mediafile_relation.get("key")
-                )
     if body["operation"] in ["txt", "alto"]:
         for image in body["mediafile_image_data"]:
             image_name = __get_imagename_and_validate(image, body["operation"])
             id_new_mediafile = __create_mediafile(
-                image, body["operation"], institution_id
-            )
-            collection_api_service.add_ocr_output_to_parent_entities(
-                image["_id"],
-                id_new_mediafile,
-                body["operation"],
-                body["lang"],
+                image, body["operation"], body["lang"]
             )
             ocr_output, mediafile_name, content_type = __get_ocr_output(
                 body["operation"],
@@ -100,13 +85,7 @@ def do_ocr(routing_key, body, message_id):
     if body["operation"] == "pdf":
         image_name = "asset-pdf"
         id_new_mediafile = __create_mediafile(
-            body["mediafile_image_data"][0], body["operation"], institution_id
-        )
-        collection_api_service.add_ocr_output_to_parent_entities(
-            body["mediafile_image_data"][0]["_id"],
-            id_new_mediafile,
-            body["operation"],
-            body["lang"],
+            body["mediafile_image_data"][0], body["operation"], body["lang"]
         )
         ocr_output, mediafile_name, content_type = __get_ocr_output(
             body["operation"],
@@ -137,15 +116,29 @@ def __is_mimetype_from_filename_valid(filename, operation):
     return mime in ALLOWED_MIMETYPES
 
 
-def __create_mediafile(mediafile_image, operation, institution_id):
+def __create_mediafile(mediafile_image, operation, lang):
     try:
         filename = (
             mediafile_image["original_filename"].split(".")[0] + f"-ocr.{operation}"
         )
-        response = elody_client.create_mediafile_with_filename(
-            filename, technical_origin="ocr", institution_id=institution_id
+        response = requests.post(
+            f"{collection_api_url}/mediafiles",
+            json={
+                "filename": filename,
+                "relations": [
+                    {
+                        "key": mediafile_image["_id"],
+                        "lang": lang,
+                        "operation": operation,
+                        "type": "isOcrFor",
+                    }
+                ],
+                "technical_origin": "ocr",
+                "type": "mediafile",
+            },
+            headers={"Authorization": f'Bearer {os.getenv("STATIC_JWT")}'},
         )
+        new_mediafile = response.json()
+        return new_mediafile.get("_key", new_mediafile["_id"])
     except Exception as ex:
         raise Exception(str(ex))
-    new_mediafile = response.json()
-    return new_mediafile.get("_key", new_mediafile["_id"])

@@ -191,13 +191,21 @@ class OcrService(metaclass=Singleton):
             pdfs.append(pdfname)
         return pdfs
 
-    def ocr(self, operation, mediafile_image_data, lang, image_name, id_new_mediafile, main_job_id=None):
+    def ocr(
+        self,
+        operation,
+        mediafile_image_data,
+        lang,
+        image_name,
+        id_new_mediafile,
+        main_job_id=None,
+    ):
         self.main_job_id = main_job_id
         ocr_job_id = init_job(
             f"mediafile_name: {image_name} - mediafile_id: {id_new_mediafile} - {operation} - {lang}",
             f"Start OCR {operation}",
             get_rabbit=self.get_rabbit,
-            parent_id=self.main_job_id
+            parent_id=self.main_job_id,
         )
         start_job(ocr_job_id, get_rabbit=self.get_rabbit)
         operations = {

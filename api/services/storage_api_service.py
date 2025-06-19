@@ -7,6 +7,7 @@ from singleton import Singleton
 collection_api_url = os.getenv("COLLECTION_API_URL")
 elody_client = Client(collection_api_url, os.getenv("STATIC_JWT"))
 
+
 class StorageApiService(metaclass=Singleton):
     def __init__(self):
         self.storage_api_url = os.getenv("STORAGE_API_URL")

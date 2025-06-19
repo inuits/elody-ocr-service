@@ -4,14 +4,13 @@ import os
 import secrets
 
 from elody.loader import load_policies
+from elody.util import CustomJSONEncoder, custom_json_dumps
 from flask import Flask, g
 from flask_restful import Api
 from flask_swagger_ui import get_swaggerui_blueprint
 from healthcheck import HealthCheck
 from importlib import import_module
 from inuits_policy_based_auth import PolicyFactory
-from job_helper.job_extension import JobExtension
-from rabbitmq_pika_flask import RabbitMQ
 
 if os.getenv("SENTRY_ENABLED", False) in ["True", "true", True]:
     import sentry_sdk
@@ -29,6 +28,7 @@ API_URL = "/spec/inuits-dams-ocr-service.json"  # Our API url (can of course be 
 swaggerui_blueprint = get_swaggerui_blueprint(SWAGGER_URL, API_URL)
 
 app = Flask(__name__)
+app.config["RESTFUL_JSON"] = {"cls": CustomJSONEncoder}
 api = Api(app)
 app.secret_key = os.getenv("SECRET_KEY", secrets.token_hex(16))
 
@@ -39,10 +39,48 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-rabbit = RabbitMQ()
-rabbit.init_app(app, "basic", json.loads, json.dumps)
-
-jobs_extension = JobExtension(rabbit)
+amqp_module = import_module(
+    os.getenv("AMQP_MANAGER", "rabbitmq_pika_flask").replace('"', "")
+)
+ExchangeParams = (
+    amqp_module.ExchangeParams
+    if amqp_module.__name__ == "amqpstorm_flask"
+    else amqp_module.ExchangeParams.ExchangeParams
+)
+rabbit = amqp_module.RabbitMQ(
+    exchange_params=ExchangeParams(
+        auto_delete=os.getenv("AUTO_DELETE_EXCHANGE", False)
+        in [
+            1,
+            "1",
+            True,
+            "True",
+            "true",
+        ],
+        passive=os.getenv("PASSIVE_EXCHANGE", False)
+        in [
+            1,
+            "1",
+            "True",
+            "true",
+            True,
+        ],
+        durable=os.getenv("DURABLE_EXCHANGE", False)
+        in [
+            1,
+            "1",
+            "True",
+            "true",
+            True,
+        ],
+    )
+)
+if amqp_module.__name__ == "amqpstorm_flask":
+    rabbit.init_app(
+        app, "basic", json.loads, custom_json_dumps, json_encoder=CustomJSONEncoder
+    )
+else:
+    rabbit.init_app(app, "basic", json.loads, custom_json_dumps)
 
 app.register_blueprint(swaggerui_blueprint)
 
@@ -60,8 +98,10 @@ if os.getenv("HEALTH_CHECK_EXTERNAL_SERVICES", True) in ["True", "true", True]:
     health.add_check(rabbit_available)
 app.add_url_rule("/health", "healthcheck", view_func=lambda: health.run())
 
+
 def user_context_setter(user_context):
     g.user_context = user_context
+
 
 policy_factory = PolicyFactory(user_context_setter)
 
