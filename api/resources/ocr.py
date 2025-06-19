@@ -6,6 +6,7 @@ from elody.job import init_job
 from flask import request, Response
 from flask_restful import abort, Resource
 from inuits_policy_based_auth import RequestContext
+from policy_factory import authenticate, get_user_context
 from services.collection_api_service import CollectionApiService
 
 ALLOWED_LANGUAGES = ["eng", "nld", "fra"]
@@ -92,7 +93,7 @@ class Ocr(Resource):
                 )
         return len(mediafile_ids)
 
-    @app.policy_factory.authenticate(RequestContext(request))
+    @authenticate(RequestContext(request))
     def post(self):
         content = self.__get_request_body()
         self.__is_malformed_message(
@@ -120,11 +121,15 @@ class Ocr(Resource):
             job_name = f"OCR for asset_id: {asset_id} - {operation} - {lang}"
         if mediafile_ids:
             job_name = f"OCR for mediafile_ids: {mediafile_ids} - {operation} - {lang}"
-        main_job_id = init_job(job_name, f"OCR", get_rabbit=self.get_rabbit)
+        user_email = get_user_context().id
+        main_job_id = init_job(
+            job_name, f"OCR", get_rabbit=self.get_rabbit, user_email=user_email
+        )
         body = {
             "operation": content["operation"],
             "lang": lang,
             "mediafile_image_data": mediafile_image_data,
             "main_job_id": main_job_id,
+            "user_email": user_email,
         }
         return self.__send_message_to_queue_and_terminate_call(body, warning)

@@ -3,14 +3,13 @@ import logging
 import os
 import secrets
 
-from elody.loader import load_policies
 from elody.util import CustomJSONEncoder, custom_json_dumps
 from flask import Flask, g
 from flask_restful import Api
 from flask_swagger_ui import get_swaggerui_blueprint
 from healthcheck import HealthCheck
 from importlib import import_module
-from inuits_policy_based_auth import PolicyFactory
+from policy_factory import init_policy_factory
 
 if os.getenv("SENTRY_ENABLED", False) in ["True", "true", True]:
     import sentry_sdk
@@ -103,13 +102,7 @@ def user_context_setter(user_context):
     g.user_context = user_context
 
 
-policy_factory = PolicyFactory(user_context_setter)
-
-try:
-    module = import_module("apps.permissions")
-    load_policies(policy_factory, logger, module.PERMISSIONS)
-except ModuleNotFoundError:
-    load_policies(policy_factory, logger)
+init_policy_factory()
 
 from resources.ocr import Ocr
 from resources.ocr_correction import OcrCorrection

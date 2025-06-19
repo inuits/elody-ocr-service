@@ -23,7 +23,7 @@ class CollectionApiService(metaclass=Singleton):
             json=metadata,
             headers=self.headers,
         )
-        if req.status_code != 201:
+        if req.status_code != 200:
             raise Exception(req.text.strip())
         return req
 
@@ -54,12 +54,12 @@ class CollectionApiService(metaclass=Singleton):
             ):
                 url = f"{self.collection_api_url}/entities/{entity_id}/relations"
                 req = requests.patch(url, json=payload, headers=self.headers)
-                if req.status_code != 201:
+                if req.status_code != 200:
                     raise Exception(req.text.strip())
                 unique_entities.append(entity_id)
         url = f"{self.collection_api_url}/mediafiles/{original_mediafile_id}/relations"
         req = requests.patch(url, json=payload, headers=self.headers)
-        if req.status_code != 201:
+        if req.status_code != 200:
             raise Exception(req.text.strip())
 
     def get_entity_type(self, entity_id):

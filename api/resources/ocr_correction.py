@@ -7,6 +7,7 @@ from elody import Client
 from flask import request, Response
 from flask_restful import abort, Resource
 from inuits_policy_based_auth import RequestContext
+from policy_factory import authenticate
 from services.collection_api_service import CollectionApiService
 from services.storage_api_service import StorageApiService
 
@@ -71,7 +72,7 @@ class OcrCorrection(Resource):
                 message="Malformed request body. You cannot give an empty mediafile id",
             )
 
-    @app.policy_factory.authenticate(RequestContext(request))
+    @authenticate(RequestContext(request))
     def post(self):
         try:
             updated_text = request.values["updated_text"]

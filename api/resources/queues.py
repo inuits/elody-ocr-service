@@ -45,11 +45,17 @@ def __get_ocr_output(
         app.logger.error(f'"In queues - The ocr function failed with:" {ex}')
 
 
-def __upload_ocr_output(ocr_output, id_new_mediafile, mediafile_name, content_type):
+def __upload_ocr_output(
+    ocr_output, id_new_mediafile, mediafile_name, content_type, user_email
+):
     storage_api_service = StorageApiService()
     try:
         storage_api_service.upload_ocr(
-            ocr_output, id_new_mediafile, mediafile_name, content_type
+            ocr_output,
+            id_new_mediafile,
+            mediafile_name,
+            content_type,
+            user_email=user_email,
         )
     except Exception as ex:
         app.logger.error(
@@ -60,6 +66,7 @@ def __upload_ocr_output(ocr_output, id_new_mediafile, mediafile_name, content_ty
 @app.rabbit.queue("dams.ocr_request")
 def do_ocr(routing_key, body, message_id):
     app.logger.info("Message received:\tKey: {}".format(routing_key))
+    user_email = body["user_email"]
     main_job_id = body.get("main_job_id")
     start_job(main_job_id, get_rabbit=lambda: app.rabbit)
     if body["operation"] in ["txt", "alto"]:
@@ -77,7 +84,11 @@ def do_ocr(routing_key, body, message_id):
                 main_job_id,
             )
             __upload_ocr_output(
-                ocr_output, id_new_mediafile, mediafile_name, content_type
+                ocr_output,
+                id_new_mediafile,
+                mediafile_name,
+                content_type,
+                user_email=user_email,
             )
             app.logger.info(
                 f"The ocr job is complete. You can now fetch the image with the given id: {id_new_mediafile}"
@@ -95,7 +106,13 @@ def do_ocr(routing_key, body, message_id):
             id_new_mediafile,
             main_job_id,
         )
-        __upload_ocr_output(ocr_output, id_new_mediafile, mediafile_name, content_type)
+        __upload_ocr_output(
+            ocr_output,
+            id_new_mediafile,
+            mediafile_name,
+            content_type,
+            user_email=user_email,
+        )
         app.logger.info(
             f"The ocr job is complete. You can now fetch the image with the given id: {id_new_mediafile}"
         )
@@ -121,23 +138,40 @@ def __create_mediafile(mediafile_image, operation, lang):
         filename = (
             mediafile_image["original_filename"].split(".")[0] + f"-ocr.{operation}"
         )
-        response = requests.post(
-            f"{collection_api_url}/mediafiles",
-            json={
-                "filename": filename,
-                "relations": [
-                    {
-                        "key": mediafile_image["_id"],
-                        "lang": lang,
-                        "operation": operation,
-                        "type": "isOcrFor",
-                    }
-                ],
-                "technical_origin": "ocr",
-                "type": "mediafile",
-            },
-            headers={"Authorization": f'Bearer {os.getenv("STATIC_JWT")}'},
-        )
+        if operation == "pdf":
+            asset_id = [
+                relation["key"]
+                for relation in mediafile_image["relations"]
+                if relation["type"] == "isMediafileFor"
+            ][0]
+            response = requests.post(
+                f"{collection_api_url}/entities/{asset_id}/mediafiles",
+                json={
+                    "filename": filename,
+                    "relation_properties": {"lang": lang, "operation": operation},
+                    "technical_origin": "ocr",
+                    "type": "mediafile",
+                },
+                headers={"Authorization": f'Bearer {os.getenv("STATIC_JWT")}'},
+            )
+        else:
+            response = requests.post(
+                f"{collection_api_url}/mediafiles",
+                json={
+                    "filename": filename,
+                    "relations": [
+                        {
+                            "key": mediafile_image["_id"],
+                            "lang": lang,
+                            "operation": operation,
+                            "type": "isOcrFor",
+                        }
+                    ],
+                    "technical_origin": "ocr",
+                    "type": "mediafile",
+                },
+                headers={"Authorization": f'Bearer {os.getenv("STATIC_JWT")}'},
+            )
         new_mediafile = response.json()
         return new_mediafile.get("_key", new_mediafile["_id"])
     except Exception as ex:
