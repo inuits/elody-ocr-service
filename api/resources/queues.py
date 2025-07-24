@@ -136,7 +136,7 @@ def __is_mimetype_from_filename_valid(filename, operation):
 def __create_mediafile(mediafile_image, operation, lang):
     try:
         filename = (
-            mediafile_image["original_filename"].split(".")[0] + f"-ocr.{operation}"
+            mediafile_image["original_filename"].split(".")[0] + f".{operation}"
         )
         if operation == "pdf":
             asset_id = [

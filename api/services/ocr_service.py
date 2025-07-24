@@ -46,7 +46,7 @@ class OcrService(metaclass=Singleton):
                 metadata.append(new_metadata)
                 self.collection_api_service.add_ocr_output_to_metadata(
                     mediafile_image_data.get("_key", mediafile_image_data.get("_id")),
-                    {"metadata": mediafile_image_data.get("metadata")},
+                    {"metadata": metadata},
                 )
             except Exception as ex:
                 app.logger.error(
