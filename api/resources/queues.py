@@ -156,9 +156,10 @@ def __create_mediafile(mediafile_image, operation, lang):
             )
         else:
             response = requests.post(
-                f"{collection_api_url}/mediafiles",
+                f"{collection_api_url}/mediafiles/{mediafile_image['_id']}/derivatives",
                 json={
                     "filename": filename,
+                    "relation_properties": {"lang": lang, "operation": operation},
                     "relations": [
                         {
                             "key": mediafile_image["_id"],
