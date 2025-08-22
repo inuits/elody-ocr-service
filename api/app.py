@@ -39,7 +39,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 amqp_module = import_module(
-    os.getenv("AMQP_MANAGER", "rabbitmq_pika_flask").replace('"', "")
+    os.getenv("AMQP_MANAGER", "amqpstorm_flask").replace('"', "")
 )
 ExchangeParams = (
     amqp_module.ExchangeParams

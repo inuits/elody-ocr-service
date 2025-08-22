@@ -87,6 +87,7 @@ class OcrService(metaclass=Singleton):
             app.logger.error(
                 f'"The ocr function failed during downloading the image in the storage api:" {ex}'
             )
+            raise
         try:
             data = self.__run_tesseract(method, CLIENT_IMAGE_PATH, img_data, lang)
             mediafile_name = (
@@ -98,6 +99,7 @@ class OcrService(metaclass=Singleton):
             app.logger.error(
                 f"The ocr function failed during running tesseract en getting the filename: {ex}"
             )
+            raise
         if ext == ".txt":
             self.__add_txt_to_metadata(mediafile_image_data[0], data)
             data = data.encode("utf-8")
@@ -214,12 +216,15 @@ class OcrService(metaclass=Singleton):
             "pdf": self.ocr_to_pdf,
         }
         func = operations.get(operation)
+        ocr_result = None
         try:
             ocr_result = func(mediafile_image_data, lang, image_name, id_new_mediafile)
         except Exception as ex:
             message = f"Starting import failed with: {ex}"
             fail_job(ocr_job_id, message, get_rabbit=self.get_rabbit)
-        finish_job(ocr_job_id, get_rabbit=self.get_rabbit)
+            raise
+        finally:
+            finish_job(ocr_job_id, get_rabbit=self.get_rabbit)
         return ocr_result
 
     def ocr_to_alto(self, mediafile_image_data, lang, image_name, id_new_mediafile):
@@ -252,11 +257,6 @@ class OcrService(metaclass=Singleton):
             images.append(mediafile_image_data[i].get("filename"))
         try:
             self.create_pdf_with_ghostscript(images, lang, id_new_mediafile)
-        except Exception as ex:
-            elody_client.delete_object("mediafiles", id_new_mediafile)
-            app.logger.info("The created mediafile is deleted due to an error:")
-            app.logger.error(f"Ghostscript failed: {ex}")
-        try:
             mediafile_name = (
                 mediafile_image_data[0].get("original_filename").split(".")[0] + ".pdf"
             )
@@ -264,6 +264,10 @@ class OcrService(metaclass=Singleton):
         except Exception as ex:
             elody_client.delete_object("mediafiles", id_new_mediafile)
             app.logger.info("The created mediafile is deleted due to an error:")
-            app.logger.error(f'"In ocr_service - The ocr function failed with:" {ex}')
+            app.logger.error(f"Ghostscript or PDF creation failed: {ex}")
+            raise
         finally:
-            Path(CLIENT_PDF_FILENAME).unlink()
+            try:
+                Path(CLIENT_PDF_FILENAME).unlink()
+            except Exception:
+                pass
