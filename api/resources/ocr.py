@@ -121,7 +121,8 @@ class Ocr(Resource):
             job_name = f"OCR for asset_id: {asset_id} - {operation} - {lang}"
         if mediafile_ids:
             job_name = f"OCR for mediafile_ids: {mediafile_ids} - {operation} - {lang}"
-        user_email = get_user_context().id
+        header_email = request.headers.get('X-User-Email', None)
+        user_email = header_email if header_email else get_user_context().email
         main_job_id = init_job(
             job_name, f"OCR", get_rabbit=self.get_rabbit, user_email=user_email
         )

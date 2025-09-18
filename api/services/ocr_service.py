@@ -201,6 +201,7 @@ class OcrService(metaclass=Singleton):
         image_name,
         id_new_mediafile,
         main_job_id=None,
+        user_email=None,
     ):
         self.main_job_id = main_job_id
         ocr_job_id = init_job(
@@ -208,6 +209,7 @@ class OcrService(metaclass=Singleton):
             f"Start OCR {operation}",
             get_rabbit=self.get_rabbit,
             parent_id=self.main_job_id,
+            user_email=user_email,
         )
         start_job(ocr_job_id, get_rabbit=self.get_rabbit)
         operations = {

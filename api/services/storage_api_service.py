@@ -22,13 +22,18 @@ class StorageApiService(metaclass=Singleton):
         return req.content
 
     def upload_ocr(
-        self, ocr_output, id_mediafile, mediafile_name, content_type, user_email
+        self, ocr_output, id_mediafile, mediafile_name, content_type, user_email=None
     ):
         self.headers["Content-Type"] = content_type
+        headers = self.headers.copy()
+        if user_email:
+            headers["X-User-Email"] = user_email
+            
         ticket_id = elody_client.create_ticket(mediafile_name)
         req = requests.post(
             f"{self.storage_api_url}/upload-with-ticket/{mediafile_name}?id={id_mediafile}&ticket_id={ticket_id}&user_email={user_email}",
             data=ocr_output,
+            headers=headers
         )
         if req.status_code != 201:
             raise Exception(req.text.strip())
