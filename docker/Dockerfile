@@ -16,7 +16,7 @@ RUN apk update && apk add --no-cache \
 RUN wget https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs10040/ghostscript-10.04.0.tar.gz && \
     tar -zxf ghostscript-10.04.0.tar.gz && \
     cd ghostscript-10.04.0/ && \
-    ./configure --prefix=/usr && \
+    ./configure CFLAGS="-std=gnu11" --prefix=/usr && \
     make so -j$(($(nproc)+2)) && \
     make soinstall && \
     cd / && \
