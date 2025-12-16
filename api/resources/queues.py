@@ -190,19 +190,13 @@ def __create_mediafile(mediafile_image, operation, lang, user_email=None, auth_h
                 json={
                     "filename": filename,
                     "relation_properties": {"lang": lang, "operation": operation},
-                    "relations": [
-                        {
-                            "key": mediafile_image["_id"],
-                            "lang": lang,
-                            "operation": operation,
-                            "type": "isOcrFor",
-                        }
-                    ],
                     "technical_origin": "ocr",
                     "type": "mediafile",
                 },
                 headers=headers,
             )
+        if not response.ok:
+            raise Exception(response.json())
         new_mediafile = response.json()
         if isinstance(new_mediafile, dict):
             return new_mediafile.get("_key") or new_mediafile.get("_id")
