@@ -63,11 +63,16 @@ class OcrService(metaclass=Singleton):
             pdf.output(CLIENT_PDF_FILENAME)
 
     def __run_tesseract(self, method, path, image_data, lang):
-        with open(path, "wb") as handler:
-            handler.write(image_data)
-        data = method(Image.open(path), lang=lang)
-        Path(path).unlink()
-        return data
+        try:
+            Path(path).parent.mkdir(parents=True, exist_ok=True)
+            with open(path, "wb") as handler:
+                handler.write(image_data)
+            data = method(Image.open(path), lang=lang)
+            return data
+        finally:
+            _path = Path(path)
+            if _path.exists():
+                _path.unlink()
 
     def convert_image_to_data(
         self,
