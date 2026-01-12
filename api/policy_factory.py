@@ -15,7 +15,7 @@ def init_policy_factory():
         "ocr-service",
         AuthlibFlaskOauth2Policy(
             Logger(""),
-            {"id": "email"},
+            {"id": "email", "email": "email"},
             getenv("STATIC_ISSUER"),
             getenv("STATIC_PUBLIC_KEY"),
             allowed_issuers.split(",") if allowed_issuers else None,

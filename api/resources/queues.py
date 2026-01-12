@@ -48,7 +48,7 @@ def __get_ocr_output(
 
 
 def __upload_ocr_output(
-    ocr_output, id_new_mediafile, mediafile_name, content_type, user_email
+    ocr_output, id_new_mediafile, mediafile_name, content_type, user_email, parent_job_id=None
 ):
     storage_api_service = StorageApiService()
     try:
@@ -58,12 +58,13 @@ def __upload_ocr_output(
             mediafile_name,
             content_type,
             user_email=user_email,
+            parent_job_id=parent_job_id
         )
     except Exception as ex:
         app.logger.error(
             f'"The ocr function failed during uploading the image in the storage api:" {ex}'
         )
-        
+
 
 def __resolve_user_from_parent_job(main_job_id):
     try:
@@ -82,14 +83,14 @@ def do_ocr(routing_key, body, message_id):
     app.logger.info("Message received:\tKey: {}".format(routing_key))
     user_email = body["user_email"]
     main_job_id = body.get("main_job_id")
-    
+
     auth_header = body.get("auth_header")
-    
+
     if (not user_email) and main_job_id:
         user_from_parent = __resolve_user_from_parent_job(main_job_id)
         if user_from_parent:
             user_email = user_from_parent
-    
+
     start_job(main_job_id, get_rabbit=lambda: app.rabbit)
     if body["operation"] in ["txt", "alto"]:
         for image in body["mediafile_image_data"]:
@@ -112,6 +113,7 @@ def do_ocr(routing_key, body, message_id):
                 mediafile_name,
                 content_type,
                 user_email=user_email,
+                parent_job_id=main_job_id
             )
             app.logger.info(
                 f"The ocr job is complete. You can now fetch the image with the given id: {id_new_mediafile}"
@@ -162,12 +164,12 @@ def __create_mediafile(mediafile_image, operation, lang, user_email=None, auth_h
         filename = (
             mediafile_image["original_filename"].split(".")[0] + f".{operation}"
         )
-        
+
         auth_token = auth_header or os.getenv("STATIC_JWT")
         headers = {"Authorization": f'Bearer {auth_token}'}
         if user_email:
             headers["X-User-Email"] = user_email
-        
+
         if operation == "pdf":
             asset_id = [
                 relation["key"]
