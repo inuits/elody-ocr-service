@@ -10,7 +10,6 @@ _rabbit = None
 
 
 def init_rabbit(app):
-    print("in init_rabbit\n\n", flush=True)
     global _rabbit
     amqp_module = import_module(getenv("AMQP_MANAGER", "amqpstorm_flask"))
     auto_delete_exchange = getenv("AUTO_DELETE_EXCHANGE", False) in [
