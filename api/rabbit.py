@@ -19,7 +19,7 @@ def init_rabbit(app):
         "True",
         "true",
     ]
-    durable_exchange = getenv("DURABLE_EXCHANGE", True) in [
+    durable_exchange = getenv("DURABLE_EXCHANGE", False) in [
         1,
         "1",
         True,
