@@ -1,6 +1,6 @@
 import flask
 import os
-import pkg_resources
+from importlib.metadata import version
 
 from flask_restful import abort, Resource
 
@@ -12,7 +12,7 @@ class Status(Resource):
     def get(self):
         try:
             tesseract = os.popen("tesseract -v").read().split("\n")[0]
-            pytesseract = pkg_resources.working_set.by_key["pytesseract"].version
+            pytesseract = version("pytesseract")
             output = f"{tesseract} available\npytesseract {pytesseract} available"
             return flask.Response(response=output, status=200, mimetype="text/plain")
         except Exception as ex:

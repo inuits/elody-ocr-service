@@ -1,13 +1,15 @@
-import app
 import mimetypes
 import os
-import requests
 
+import app
+import requests
 from elody import Client
 from elody.exceptions import InvalidExtensionException
-from elody.job import start_job, finish_job
+from elody.job import finish_job, start_job
+from rabbit import get_rabbit
 from services.ocr_service import OcrService
 from services.storage_api_service import StorageApiService
+from os import getenv
 
 ALLOWED_MIMETYPES = [
     "image/png",
@@ -21,6 +23,16 @@ ALLOWED_MIMETYPES = [
 
 collection_api_url = os.getenv("COLLECTION_API_URL")
 elody_client = Client(collection_api_url, os.getenv("STATIC_JWT"))
+
+
+def __argument_wrapper(*, queue_name, routing_key):
+    arguments = {"routing_key": routing_key}
+    queue_type = getenv("QUEUE_TYPE", "classic")
+    if getenv("AMQP_MANAGER", "amqpstorm_flask") == "amqpstorm_flask":
+        arguments["queue_name"] = queue_name
+        if queue_type:
+            arguments["queue_arguments"] = {"x-queue-type": queue_type}
+    return arguments
 
 
 def __get_ocr_output(
@@ -48,7 +60,12 @@ def __get_ocr_output(
 
 
 def __upload_ocr_output(
-    ocr_output, id_new_mediafile, mediafile_name, content_type, user_email, parent_job_id=None
+    ocr_output,
+    id_new_mediafile,
+    mediafile_name,
+    content_type,
+    user_email,
+    parent_job_id=None,
 ):
     storage_api_service = StorageApiService()
     try:
@@ -58,7 +75,7 @@ def __upload_ocr_output(
             mediafile_name,
             content_type,
             user_email=user_email,
-            parent_job_id=parent_job_id
+            parent_job_id=parent_job_id,
         )
     except Exception as ex:
         app.logger.error(
@@ -69,7 +86,9 @@ def __upload_ocr_output(
 def __resolve_user_from_parent_job(main_job_id):
     try:
         headers = {"Authorization": f'Bearer {os.getenv("STATIC_JWT")}'}
-        r = requests.get(f"{collection_api_url}/jobs/{main_job_id}", headers=headers, timeout=5)
+        r = requests.get(
+            f"{collection_api_url}/jobs/{main_job_id}", headers=headers, timeout=5
+        )
         if r.status_code == 200:
             job = r.json()
             return job.get("created_by") or job.get("last_editor") or None
@@ -78,7 +97,9 @@ def __resolve_user_from_parent_job(main_job_id):
     return None
 
 
-@app.rabbit.queue("dams.ocr_request")
+@get_rabbit().queue(
+    **__argument_wrapper(queue_name="dams.ocr_request", routing_key="dams.ocr_request")
+)
 def do_ocr(routing_key, body, message_id):
     app.logger.info("Message received:\tKey: {}".format(routing_key))
     user_email = body["user_email"]
@@ -91,7 +112,7 @@ def do_ocr(routing_key, body, message_id):
         if user_from_parent:
             user_email = user_from_parent
 
-    start_job(main_job_id, get_rabbit=lambda: app.rabbit)
+    start_job(main_job_id, get_rabbit=get_rabbit)
     if body["operation"] in ["txt", "alto"]:
         for image in body["mediafile_image_data"]:
             image_name = __get_imagename_and_validate(image, body["operation"])
@@ -113,7 +134,7 @@ def do_ocr(routing_key, body, message_id):
                 mediafile_name,
                 content_type,
                 user_email=user_email,
-                parent_job_id=main_job_id
+                parent_job_id=main_job_id,
             )
             app.logger.info(
                 f"The ocr job is complete. You can now fetch the image with the given id: {id_new_mediafile}"
@@ -121,7 +142,11 @@ def do_ocr(routing_key, body, message_id):
     if body["operation"] == "pdf":
         image_name = "asset-pdf"
         id_new_mediafile = __create_mediafile(
-            body["mediafile_image_data"][0], body["operation"], body["lang"], user_email, auth_header
+            body["mediafile_image_data"][0],
+            body["operation"],
+            body["lang"],
+            user_email,
+            auth_header,
         )
         ocr_output, mediafile_name, content_type = __get_ocr_output(
             body["operation"],
@@ -142,7 +167,7 @@ def do_ocr(routing_key, body, message_id):
         app.logger.info(
             f"The ocr job is complete. You can now fetch the image with the given id: {id_new_mediafile}"
         )
-    finish_job(main_job_id, get_rabbit=lambda: app.rabbit)
+    finish_job(main_job_id, get_rabbit=get_rabbit)
 
 
 def __get_imagename_and_validate(mediafile_image, operation):
@@ -159,14 +184,14 @@ def __is_mimetype_from_filename_valid(filename, operation):
     return mime in ALLOWED_MIMETYPES
 
 
-def __create_mediafile(mediafile_image, operation, lang, user_email=None, auth_header=None):
+def __create_mediafile(
+    mediafile_image, operation, lang, user_email=None, auth_header=None
+):
     try:
-        filename = (
-            mediafile_image["original_filename"].split(".")[0] + f".{operation}"
-        )
+        filename = mediafile_image["original_filename"].split(".")[0] + f".{operation}"
 
         auth_token = auth_header or os.getenv("STATIC_JWT")
-        headers = {"Authorization": f'Bearer {auth_token}'}
+        headers = {"Authorization": f"Bearer {auth_token}"}
         if user_email:
             headers["X-User-Email"] = user_email
 

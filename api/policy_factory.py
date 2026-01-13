@@ -1,30 +1,28 @@
 from flask import g
+from importlib import import_module
 from inuits_policy_based_auth import PolicyFactory, RequestContext
-from inuits_policy_based_auth.authentication.policies.token_based_policies.authlib_flask_oauth2_policy import (
-    AuthlibFlaskOauth2Policy,
-)
-from inuits_policy_based_auth.contexts.user_context import UserContext
 from inuits_policy_based_auth.exceptions import NoUserContextException
-from logging import Logger
-from os import getenv
 
 
 def init_policy_factory():
-    allowed_issuers = getenv("ALLOWED_ISSUERS")
-    _policy_factory.register_authentication_policy(
-        "ocr-service",
-        AuthlibFlaskOauth2Policy(
-            Logger(""),
-            {"id": "email", "email": "email"},
-            getenv("STATIC_ISSUER"),
-            getenv("STATIC_PUBLIC_KEY"),
-            allowed_issuers.split(",") if allowed_issuers else None,
-        ),
-    )
-    _policy_factory.register_authorization_policy(
-        "ocr-service", None  # pyright: ignore
-    )
-    _policy_factory.set_fallback_key_for_policy_mapping("ocr-service")
+    from elody.loader import load_policies
+
+    global _policy_factory
+    try:
+        permissions_module = import_module("apps.permissions")
+        load_policies(
+            _policy_factory,
+            None,
+            permissions_module.PERMISSIONS,
+            permissions_module.PLACEHOLDERS,
+        )
+    except (ModuleNotFoundError, AttributeError):
+        load_policies(_policy_factory, None)
+
+
+def apply_policies(request_context: RequestContext):
+    global _policy_factory
+    return _policy_factory.apply_policies(request_context)
 
 
 def authenticate(request_context: RequestContext):
@@ -32,7 +30,7 @@ def authenticate(request_context: RequestContext):
     return _policy_factory.authenticate(request_context)
 
 
-def get_user_context() -> UserContext:
+def get_user_context():
     try:
         user_context = g.get("user_context")
         if not user_context:

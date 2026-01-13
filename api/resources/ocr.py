@@ -1,12 +1,13 @@
-import app
 import os
 
+import app
 from elody import Client
 from elody.job import init_job
-from flask import request, Response
-from flask_restful import abort, Resource
+from flask import Response, request
+from flask_restful import Resource, abort
 from inuits_policy_based_auth import RequestContext
 from policy_factory import authenticate, get_user_context
+from rabbit import get_rabbit
 from services.collection_api_service import CollectionApiService
 
 ALLOWED_LANGUAGES = ["eng", "nld", "fra"]
@@ -19,7 +20,7 @@ class Ocr(Resource):
     def __init__(self):
         self.headers = {"Authorization": f'Bearer {os.getenv("STATIC_JWT")}'}
         self.collection_api_service = CollectionApiService()
-        self.get_rabbit = lambda: app.rabbit
+        self.get_rabbit = get_rabbit
 
     def __get_request_body(self):
         if request_body := request.get_json(silent=True):
@@ -48,13 +49,13 @@ class Ocr(Resource):
     def __send_message_to_queue_and_terminate_call(self, body, warning):
         try:
             app.logger.info("Going to send message to queue")
-            app.rabbit.send(body, routing_key="dams.ocr_request")
+            get_rabbit().send(body, routing_key="dams.ocr_request")
         except Exception as ex:
             abort(400, f"Exception at queue: {str(ex)}")
         if warning:
             self.headers["Warning"] = warning
         return Response(
-            response=f"Ocr job is put on queue.",
+            response="Ocr job is put on queue.",
             status=200,
             headers=self.headers,
             mimetype="text/plain",
@@ -121,10 +122,10 @@ class Ocr(Resource):
             job_name = f"OCR for asset_id: {asset_id} - {operation} - {lang}"
         if mediafile_ids:
             job_name = f"OCR for mediafile_ids: {mediafile_ids} - {operation} - {lang}"
-        header_email = request.headers.get('X-User-Email', None)
+        header_email = request.headers.get("X-User-Email", None)
         user_email = header_email if header_email else get_user_context().email
         main_job_id = init_job(
-            job_name, f"OCR", get_rabbit=self.get_rabbit, user_email=user_email
+            job_name, "OCR", get_rabbit=self.get_rabbit, user_email=user_email
         )
         body = {
             "operation": content["operation"],

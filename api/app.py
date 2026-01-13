@@ -1,15 +1,15 @@
-import json
 import logging
 import os
 import secrets
 
-from elody.util import CustomJSONEncoder, custom_json_dumps
+from elody.util import CustomJSONEncoder
 from flask import Flask, g
 from flask_restful import Api
 from flask_swagger_ui import get_swaggerui_blueprint
 from healthcheck import HealthCheck
-from importlib import import_module
+from init_api import init_api
 from policy_factory import init_policy_factory
+from rabbit import get_rabbit, init_rabbit
 
 if os.getenv("SENTRY_ENABLED", False) in ["True", "true", True]:
     import sentry_sdk
@@ -38,54 +38,15 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-amqp_module = import_module(
-    os.getenv("AMQP_MANAGER", "amqpstorm_flask").replace('"', "")
-)
-ExchangeParams = (
-    amqp_module.ExchangeParams
-    if amqp_module.__name__ == "amqpstorm_flask"
-    else amqp_module.ExchangeParams.ExchangeParams
-)
-rabbit = amqp_module.RabbitMQ(
-    exchange_params=ExchangeParams(
-        auto_delete=os.getenv("AUTO_DELETE_EXCHANGE", False)
-        in [
-            1,
-            "1",
-            True,
-            "True",
-            "true",
-        ],
-        passive=os.getenv("PASSIVE_EXCHANGE", False)
-        in [
-            1,
-            "1",
-            "True",
-            "true",
-            True,
-        ],
-        durable=os.getenv("DURABLE_EXCHANGE", False)
-        in [
-            1,
-            "1",
-            "True",
-            "true",
-            True,
-        ],
-    )
-)
-if amqp_module.__name__ == "amqpstorm_flask":
-    rabbit.init_app(
-        app, "basic", json.loads, custom_json_dumps, json_encoder=CustomJSONEncoder
-    )
-else:
-    rabbit.init_app(app, "basic", json.loads, custom_json_dumps)
 
 app.register_blueprint(swaggerui_blueprint)
 
 
+init_rabbit(app)
+
+
 def rabbit_available():
-    connection = rabbit.get_connection()
+    connection = get_rabbit().get_connection()
     if connection.is_open:
         return True, "Successfully reached RabbitMQ"
     return False, "Failed to reach RabbitMQ"
@@ -103,16 +64,8 @@ def user_context_setter(user_context):
 
 init_policy_factory()
 
-from resources.ocr import Ocr
-from resources.ocr_correction import OcrCorrection
-from resources.status import Status
-import resources.queues
-from resources.spec import OpenAPISpec
+init_api(app)
 
-api.add_resource(Ocr, "/ocr")
-api.add_resource(OcrCorrection, "/ocr/correction")
-api.add_resource(Status, "/status")
-api.add_resource(OpenAPISpec, "/spec/inuits-dams-ocr-service.json")
 
 if __name__ == "__main__":
     app.run()

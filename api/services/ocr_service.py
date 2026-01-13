@@ -1,19 +1,19 @@
-import app
-import ghostscript
 import multiprocessing
 import os
-import pytesseract
-
-from elody import Client
-from elody.job import init_job, start_job, finish_job, fail_job
-from fpdf import FPDF
 from io import BytesIO
 from pathlib import Path
+
+import app
+import ghostscript
+import pytesseract
+from elody import Client
+from elody.job import fail_job, finish_job, init_job, start_job
+from fpdf import FPDF
 from PIL import Image
-from singleton import Singleton
+from rabbit import get_rabbit
 from services.collection_api_service import CollectionApiService
 from services.storage_api_service import StorageApiService
-
+from singleton import Singleton
 
 CLIENT_PDF_FILENAME = str(os.getenv("CLIENT_PDF_FILENAME", False))
 CLIENT_IMAGE_PATH = str(os.getenv("CLIENT_IMAGE_PATH", False))
@@ -29,9 +29,9 @@ class OcrService(metaclass=Singleton):
         self.storage_api_service = StorageApiService()
         self.collection_api_service = CollectionApiService()
         self.main_job_id = ""
-        self.get_rabbit = lambda: app.rabbit
+        self.get_rabbit = get_rabbit
 
-    def __add_txt_to_metadata(self, mediafile_image_data, ocr_output):
+    def __add_txt_to_metadata(self, mediafile_image_data, ocr_output, lang=None):
         metadata = mediafile_image_data.get("metadata")
         original_text = next(
             (item for item in metadata if item["key"] == "text_from_ocr"), None
@@ -44,6 +44,8 @@ class OcrService(metaclass=Singleton):
             try:
                 new_metadata = {"key": "text_from_ocr", "value": ocr_output}
                 metadata.append(new_metadata)
+                if lang:
+                    metadata.append({"key": "ocr_language", "value": lang})
                 self.collection_api_service.add_ocr_output_to_metadata(
                     mediafile_image_data.get("_key", mediafile_image_data.get("_id")),
                     {"metadata": metadata},
@@ -106,7 +108,7 @@ class OcrService(metaclass=Singleton):
             )
             raise
         if ext == ".txt":
-            self.__add_txt_to_metadata(mediafile_image_data[0], data)
+            self.__add_txt_to_metadata(mediafile_image_data[0], data, lang=lang)
             data = data.encode("utf-8")
         return data, mediafile_name, mimetype
 
