@@ -11,12 +11,12 @@ from init_api import init_api
 from policy_factory import init_policy_factory
 from rabbit import get_rabbit, init_rabbit
 
-if os.getenv("SENTRY_ENABLED", False) in ["True", "true", True]:
+if os.getenv("GLITCH_TIP_ENABLED", False) in ["True", "true", True]:
     import sentry_sdk
     from sentry_sdk.integrations.flask import FlaskIntegration
 
     sentry_sdk.init(
-        dsn=os.getenv("SENTRY_DSN"),
+        dsn=os.getenv("GLITCH_TIP_DSN"),
         integrations=[FlaskIntegration()],
         environment=os.getenv("NOMAD_NAMESPACE"),
     )
