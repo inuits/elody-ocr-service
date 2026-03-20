@@ -2,6 +2,9 @@ from flask import g
 from importlib import import_module
 from inuits_policy_based_auth import PolicyFactory, RequestContext
 from inuits_policy_based_auth.exceptions import NoUserContextException
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def init_policy_factory():
@@ -12,7 +15,7 @@ def init_policy_factory():
         permissions_module = import_module("apps.permissions")
         load_policies(
             _policy_factory,
-            None,
+            logger,
             permissions_module.PERMISSIONS,
             permissions_module.PLACEHOLDERS,
         )
@@ -46,3 +49,4 @@ def user_context_setter(user_context):
 
 
 _policy_factory = PolicyFactory(user_context_setter)
+
