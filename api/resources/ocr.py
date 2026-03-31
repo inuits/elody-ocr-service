@@ -11,6 +11,7 @@ from rabbit import get_rabbit
 from services.collection_api_service import CollectionApiService
 
 ALLOWED_LANGUAGES = ["eng", "nld", "fra"]
+ROUTING_KEY_PREFIX = os.getenv("ROUTING_KEY_PREFIX", "dams")
 
 collection_api_url = os.getenv("COLLECTION_API_URL")
 elody_client = Client(collection_api_url, os.getenv("STATIC_JWT"))
@@ -18,7 +19,7 @@ elody_client = Client(collection_api_url, os.getenv("STATIC_JWT"))
 
 class Ocr(Resource):
     def __init__(self):
-        self.headers = {"Authorization": f'Bearer {os.getenv("STATIC_JWT")}'}
+        self.headers = {"Authorization": f"Bearer {os.getenv('STATIC_JWT')}"}
         self.collection_api_service = CollectionApiService()
         self.get_rabbit = get_rabbit
 
@@ -49,7 +50,7 @@ class Ocr(Resource):
     def __send_message_to_queue_and_terminate_call(self, body, warning):
         try:
             app.logger.info("Going to send message to queue")
-            get_rabbit().send(body, routing_key="dams.ocr_request")
+            get_rabbit().send(body, routing_key=f"{ROUTING_KEY_PREFIX}.ocr_request")
         except Exception as ex:
             abort(400, f"Exception at queue: {str(ex)}")
         if warning:
@@ -135,3 +136,4 @@ class Ocr(Resource):
             "user_email": user_email,
         }
         return self.__send_message_to_queue_and_terminate_call(body, warning)
+
