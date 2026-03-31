@@ -23,6 +23,7 @@ ALLOWED_MIMETYPES = [
 
 collection_api_url = os.getenv("COLLECTION_API_URL")
 elody_client = Client(collection_api_url, os.getenv("STATIC_JWT"))
+ROUTING_KEY_PREFIX = os.getenv("ROUTING_KEY_PREFIX", "dams")
 
 
 def __argument_wrapper(*, queue_name, routing_key):
@@ -85,7 +86,7 @@ def __upload_ocr_output(
 
 def __resolve_user_from_parent_job(main_job_id):
     try:
-        headers = {"Authorization": f'Bearer {os.getenv("STATIC_JWT")}'}
+        headers = {"Authorization": f"Bearer {os.getenv('STATIC_JWT')}"}
         r = requests.get(
             f"{collection_api_url}/jobs/{main_job_id}", headers=headers, timeout=5
         )
@@ -98,7 +99,9 @@ def __resolve_user_from_parent_job(main_job_id):
 
 
 @get_rabbit().queue(
-    **__argument_wrapper(queue_name="dams.ocr_request", routing_key="dams.ocr_request")
+    **__argument_wrapper(
+        queue_name="dams.ocr_request", routing_key=f"{ROUTING_KEY_PREFIX}.ocr_request"
+    )
 )
 def do_ocr(routing_key, body, message_id):
     app.logger.info("Message received:\tKey: {}".format(routing_key))
@@ -230,3 +233,4 @@ def __create_mediafile(
         return new_mediafile
     except Exception as ex:
         raise Exception(str(ex))
+
