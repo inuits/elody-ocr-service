@@ -19,6 +19,8 @@ CLIENT_PDF_FILENAME = str(os.getenv("CLIENT_PDF_FILENAME", False))
 CLIENT_IMAGE_PATH = str(os.getenv("CLIENT_IMAGE_PATH", False))
 CLIENT_PDF_PATH = str(os.getenv("CLIENT_PDF_PATH", False))
 
+Image.MAX_IMAGE_PIXELS = None
+
 collection_api_url = os.getenv("COLLECTION_API_URL")
 elody_client = Client(collection_api_url, os.getenv("STATIC_JWT"))
 
