@@ -15,7 +15,7 @@ elody[loader]==0.0.231
 Flask==3.1.0
 Flask-RESTful==0.3.10
 flask-swagger-ui==4.11.1
-fonttools==4.55.3
+fonttools==4.63.0
 fpdf2==2.8.2
 ghostscript==0.7
 gunicorn==23.0.0
