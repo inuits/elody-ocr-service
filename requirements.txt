@@ -18,7 +18,7 @@ flask-swagger-ui==4.11.1
 fonttools==4.55.3
 fpdf2==2.8.2
 ghostscript==0.7
-gunicorn==23.0.0
+gunicorn==26.0.0
 idna==3.10
 inuits-policy-based-auth==10.0.1
 itsdangerous==2.2.0
