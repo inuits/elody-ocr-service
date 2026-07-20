@@ -14,7 +14,7 @@ deprecation==2.1.0
 elody[loader]==0.0.231
 Flask==3.1.0
 Flask-RESTful==0.3.10
-flask-swagger-ui==4.11.1
+flask-swagger-ui==5.32.9
 fonttools==4.55.3
 fpdf2==2.8.2
 ghostscript==0.7
