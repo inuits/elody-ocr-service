@@ -6,6 +6,7 @@ from typing import Any
 from elody.loader import load_queues
 from elody.util import CustomJSONEncoder, custom_json_dumps
 import logging
+from observability import traced_rabbit
 
 _rabbit = None
 logger = logging.getLogger(__name__)
@@ -41,13 +42,13 @@ def init_rabbit(app):
         if amqp_module.__name__ == "amqpstorm_flask"
         else amqp_module.ExchangeParams.ExchangeParams
     )
-    _rabbit = amqp_module.RabbitMQ(
+    _rabbit = traced_rabbit(amqp_module.RabbitMQ(
         exchange_params=ExchangeParams(
             auto_delete=auto_delete_exchange,
             durable=durable_exchange,
             passive=passive_exchange,
         )
-    )
+    ))
     if amqp_module.__name__ == "amqpstorm_flask":
         _rabbit.init_app(
             app, "basic", loads, custom_json_dumps, json_encoder=CustomJSONEncoder
