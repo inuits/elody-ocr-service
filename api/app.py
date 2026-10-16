@@ -10,7 +10,7 @@ from healthcheck import HealthCheck
 from init_api import init_api
 from policy_factory import init_policy_factory
 from rabbit import get_rabbit, init_rabbit
-from observability import init_observability
+from elody.observability import init_observability
 
 SWAGGER_URL = "/api/docs"  # URL for exposing Swagger UI (without trailing '/')
 API_URL = "/spec/inuits-dams-ocr-service.json"  # Our API url (can of course be a local resource)
