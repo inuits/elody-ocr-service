@@ -5,7 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13.0"
 dependencies = [
-  "amqpstorm==2.11.1",
+  "amqpstorm==3.1.4",
   "amqpstorm-flask==0.7.1",
   "aniso8601==10.0.1",
   "apscheduler==3.11.3",
