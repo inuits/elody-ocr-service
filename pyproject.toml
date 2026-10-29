@@ -42,7 +42,7 @@ dependencies = [
   "pycparser==3.11",
   "pypdf==6.21.2",
   "pytesseract==0.3.13",
-  "pytz==2026.5",
+  "pytz==2026.6",
   "rabbitmq-pika-flask==1.2.35",
   "requests==2.34.2",
   "retry==0.9.2",
