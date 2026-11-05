@@ -29,7 +29,7 @@ attrs==26.1.0 \
     # via
     #   jsonschema
     #   referencing
-authlib==1.9.1 \
+authlib==1.9.5 \
     --hash=sha256:5c7d9848f47cac340f060f76ae0bc09b59f5c8e89cc1bb032d4370a0c55b5974 \
     --hash=sha256:8b9be8b1e5174dcbf5520e984f1a22dc2edae5b6e40a61d4cedbf86b97e9e69b
     # via
