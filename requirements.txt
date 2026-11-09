@@ -464,7 +464,7 @@ job-helper==1.2 \
     --hash=sha256:8605f5509faed5acb028d6647b75979a8f1a452880b934c5ec19b37342cf0788 \
     --hash=sha256:e23bb8b36ef8f90c54fba6b13c62b54f0fe441e64f73f06d7b22a7c5096e5d0f
     # via ocr-service
-joserfc==1.7.7 \
+joserfc==1.8.0 \
     --hash=sha256:06979cfbab78bc802f14c0358f32969826cc26720e13cb38926ffdc86bc0cb2c \
     --hash=sha256:471d0fd12a5a0d1c0942de280f39efe6f597878315033270b504d4d006d25510
     # via
