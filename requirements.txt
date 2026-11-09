@@ -949,7 +949,7 @@ werkzeug==3.1.9 \
     #   flask
     #   inuits-policy-based-auth
     #   ocr-service
-wrapt==2.5.1 \
+wrapt==2.5.2 \
     --hash=sha256:03aa7d2256309b57ddbf317bff2cae5f47e50ea9ae8d582780ebe0b554347b42 \
     --hash=sha256:051220e5071fdfb1a6678707c8abb7bbf4824d40f99758394b2b4d64855fb284 \
     --hash=sha256:0591e6eace0d186c9ef1ecd1244be5a04e98041424cfca425b684ffe4f0d8030 \
