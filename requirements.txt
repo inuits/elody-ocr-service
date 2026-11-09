@@ -763,7 +763,7 @@ py-healthcheck==1.10.1 \
     --hash=sha256:2c340026acda509073667476e1bd45b66d7c8d345cd6aa8f91b156edd7bd4e02 \
     --hash=sha256:60bbaab729a89098f0e6723ba5b6ab4ca8bde79b1a1bdb324f2b9e39df33780d
     # via ocr-service
-pycparser==3.11 \
+pycparser==3.12 \
     --hash=sha256:51d5a8ba2be0bbe440b99d2112604c95bbbc3c2748a64260186c541e1729cd80 \
     --hash=sha256:d875f09c3507d00e1aba0eecc6dcadc1352f30fff09dc6bff2f1c2935e97c2bc
     # via
