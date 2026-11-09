@@ -345,7 +345,7 @@ deprecation==2.1.0 \
     # via
     #   cloudevents
     #   ocr-service
-elody==0.0.270 \
+elody==0.0.271 \
     --hash=sha256:99c38988a3816d3a9419351afa87ddc4b4d5b50404d029ab9306741d707bbc5c \
     --hash=sha256:c85acd1cfb44230bf1d34141c31487540c76179b04dc435af386fa0899ee892a
     # via ocr-service
