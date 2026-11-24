@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.13.0"
 
 [[package]]
@@ -433,7 +433,7 @@ wheels = [
 
 [[package]]
 name = "elody"
-version = "0.0.270"
+version = "0.0.273"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "certifi" },
@@ -442,9 +442,9 @@ dependencies = [
     { name = "requests" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/21/8b/2c5332abb66780ce45794a1a656221996f7305f7afc2268bc73f5618923a/elody-0.0.270.tar.gz", hash = "sha256:99c38988a3816d3a9419351afa87ddc4b4d5b50404d029ab9306741d707bbc5c", size = 65468, upload-time = "2026-10-21T10:31:35.968Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/3f/20/ccf9ad5c42da3fddfc9f8f8ab2c44c89cd8a16d8036bf43c60b3a8eeb956/elody-0.0.273.tar.gz", hash = "sha256:bb47916b6e5520371280795dd4a1b977d24a75586b37605ceee7a7e51c7d7582", size = 64169, upload-time = "2026-11-24T14:49:25.545Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ee/8c/339fb4bbbd53594ec0bf9f3ddd92f7ebbf3bb2c9e4c81019f72b7e40ed9d/elody-0.0.270-py3-none-any.whl", hash = "sha256:c85acd1cfb44230bf1d34141c31487540c76179b04dc435af386fa0899ee892a", size = 76018, upload-time = "2026-10-21T10:31:34.616Z" },
+    { url = "https://files.pythonhosted.org/packages/41/fb/d4f66f1a59cef1c3e9d8d431c62471f4aea65c761aa99ac247e5d2907142/elody-0.0.273-py3-none-any.whl", hash = "sha256:7b0f90a3fec8bc203ac224cfe56a913039c8e1debd32bbde20b10de9dd763d9c", size = 74076, upload-time = "2026-11-24T14:49:24.345Z" },
 ]
 
 [package.optional-dependencies]
@@ -623,7 +623,7 @@ wheels = [
 
 [[package]]
 name = "inuits-policy-based-auth"
-version = "10.1.1"
+version = "10.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "authlib" },
@@ -631,9 +631,9 @@ dependencies = [
     { name = "requests" },
     { name = "werkzeug" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/38/42/0d1c5ed16d9c308eb335fea868e17a3c6063d807b93a8e9da2752e70d7ad/inuits_policy_based_auth-10.1.1.tar.gz", hash = "sha256:18a8f6403c28754a751696097fd47e051958cd67877029139d4abce2d64102f9", size = 40695, upload-time = "2026-08-07T11:43:05.071Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/7a/1a/098c6eab90ca1ce4eef7a19b9499d795e980a67007828ef024c34e39f166/inuits_policy_based_auth-10.3.0.tar.gz", hash = "sha256:ce8142b74a5b08515e70b2186215e65d853923aff3e8cf1fb8e445fd0872b620", size = 44293, upload-time = "2026-11-09T14:07:11.354Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/68/49/24f86ef9ecc5220fca6aa24202c071c1aa0f7ed58d098c89775b49dbeb07/inuits_policy_based_auth-10.1.1-py3-none-any.whl", hash = "sha256:d79d8937341025a97f5214ef9b03a3272361bb346ce294511c39dc48c8181cbd", size = 52899, upload-time = "2026-08-07T11:43:03.866Z" },
+    { url = "https://files.pythonhosted.org/packages/1e/5c/e0a4f1506cedcd6d26f1458b7ffeccc29d0d9e306ff5b664f18ee4477223/inuits_policy_based_auth-10.3.0-py3-none-any.whl", hash = "sha256:039f5c62b3ac30362cfd430d31461336afa894097e57c0ca8b0919f593bc9c28", size = 55083, upload-time = "2026-11-09T14:07:09.83Z" },
 ]
 
 [[package]]
@@ -885,7 +885,7 @@ requires-dist = [
     { name = "decorator", specifier = "==5.3.1" },
     { name = "defusedxml", specifier = "==0.7.1" },
     { name = "deprecation", specifier = "==2.1.0" },
-    { name = "elody", extras = ["loader", "observability"], specifier = "==0.0.270" },
+    { name = "elody", extras = ["loader", "observability"], specifier = "==0.0.273" },
     { name = "flask", specifier = "==3.1.3" },
     { name = "flask-restful", specifier = "==0.3.10" },
     { name = "flask-swagger-ui", specifier = "==5.34.0" },
@@ -894,7 +894,7 @@ requires-dist = [
     { name = "ghostscript", specifier = "==0.8.1" },
     { name = "gunicorn", specifier = "==26.2.0" },
     { name = "idna", specifier = "==3.20" },
-    { name = "inuits-policy-based-auth", specifier = "==10.1.1" },
+    { name = "inuits-policy-based-auth", specifier = "==10.3.0" },
     { name = "itsdangerous", specifier = "==2.2.0" },
     { name = "jinja2", specifier = "==3.1.6" },
     { name = "job-helper", specifier = "==1.2" },
