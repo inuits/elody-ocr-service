@@ -7,6 +7,7 @@ from elody import Client
 from elody.exceptions import InvalidExtensionException
 from elody.job import finish_job, start_job
 from rabbit import get_rabbit
+from services.collection_api_service import send_with_conflict_retry
 from services.ocr_service import OcrService
 from services.storage_api_service import StorageApiService
 from os import getenv
@@ -204,7 +205,8 @@ def __create_mediafile(
                 for relation in mediafile_image["relations"]
                 if relation["type"] == "isMediafileFor"
             ][0]
-            response = requests.post(
+            response = send_with_conflict_retry(
+                "POST",
                 f"{collection_api_url}/entities/{asset_id}/mediafiles",
                 json={
                     "filename": filename,
@@ -215,7 +217,8 @@ def __create_mediafile(
                 headers=headers,
             )
         else:
-            response = requests.post(
+            response = send_with_conflict_retry(
+                "POST",
                 f"{collection_api_url}/mediafiles/{mediafile_image['_id']}/derivatives",
                 json={
                     "filename": filename,
