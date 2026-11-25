@@ -34,7 +34,7 @@ dependencies = [
   "jinja2==3.1.6",
   "job-helper==1.2",
   "markupsafe==3.0.4",
-  "packaging==26.3",
+  "packaging==26.4",
   "pika==1.4.4",
   "pillow==13.0.0",
   "py==1.11.0",
