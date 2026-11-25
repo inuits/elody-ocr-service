@@ -605,22 +605,22 @@ opentelemetry-exporter-otlp-proto-http==1.45.1 \
     --hash=sha256:24a97cf3753c7fb52fad44a696e452ff371686339e2acf3309e2eda3d0230700 \
     --hash=sha256:45c218405ce3fd879596924b1874bf9a8f6880206d61065c5a912c8e5c297fb7
     # via elody
-opentelemetry-instrumentation==0.66b1 \
+opentelemetry-instrumentation==0.66b2 \
     --hash=sha256:4c4aa14dc9a24a02325a9d4c42c4d0208dbb1374c2b1b8fe6c9392d59f3e1008 \
     --hash=sha256:e79a510f7d87c72d95e964ddb42193a0d9a75668c027d980eab032ea1322a5ce
     # via
     #   opentelemetry-instrumentation-flask
     #   opentelemetry-instrumentation-requests
     #   opentelemetry-instrumentation-wsgi
-opentelemetry-instrumentation-flask==0.66b1 \
+opentelemetry-instrumentation-flask==0.66b2 \
     --hash=sha256:10f788aff95236f0dbaaa066687283bf6345bb3c77bbb437f0fb67cb6222d5eb \
     --hash=sha256:2933e71b94cc9e8e943e648d872fd3dead9cdb61295dc6deffd5d6fa8f27a39b
     # via elody
-opentelemetry-instrumentation-requests==0.66b1 \
+opentelemetry-instrumentation-requests==0.66b2 \
     --hash=sha256:28578f72e68e3a5be3226c618ac9570ed360ef1dd22d5d6e0721c6905a4ccc67 \
     --hash=sha256:7ba17d984a2bd876b88bf0aafcca27b5e3ff4c1821e0fe07641e380a3cf3a3a2
     # via elody
-opentelemetry-instrumentation-wsgi==0.66b1 \
+opentelemetry-instrumentation-wsgi==0.66b2 \
     --hash=sha256:8c86390c32fe8d0924b3541f292122d3a2ba6c3accc2bcbcc73ae985ee8e799e \
     --hash=sha256:ce803d8e828e75d7225c25a618b692cbd4687a11be64356308ed1feab0f70bab
     # via opentelemetry-instrumentation-flask
@@ -646,7 +646,7 @@ opentelemetry-semantic-conventions==0.66b1 \
     #   opentelemetry-instrumentation-requests
     #   opentelemetry-instrumentation-wsgi
     #   opentelemetry-sdk
-opentelemetry-util-http==0.66b1 \
+opentelemetry-util-http==0.66b2 \
     --hash=sha256:047dea1a628031f857a5a32261dc0e955bc162d39993ed1cffb8f2cff5ba8a62 \
     --hash=sha256:8f443d7abcaf29c4a07b373bbd31b5b39132c0ed3c27d015a59dc0323d5b1c58
     # via
