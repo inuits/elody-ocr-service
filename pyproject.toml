@@ -27,7 +27,7 @@ dependencies = [
   "fonttools==4.67.0",
   "fpdf2==2.8.9",
   "ghostscript==0.8.1",
-  "gunicorn==26.2.0",
+  "gunicorn==27.0.1",
   "idna==3.20",
   "inuits-policy-based-auth==10.3.0",
   "itsdangerous==2.2.0",
