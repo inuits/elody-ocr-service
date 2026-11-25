@@ -415,7 +415,7 @@ fonttools==4.67.0 \
     # via
     #   fpdf2
     #   ocr-service
-fpdf2==2.8.9 \
+fpdf2==2.9.0 \
     --hash=sha256:5b0b3786f5236a2b3cc83c1fee567df17ddd314f8c4e13d820d8f09b617ab4f0 \
     --hash=sha256:6e1d94af6d6311950a23dec7fb5fc84b000203eb59aee8e76c1e701b12a14976
     # via ocr-service
