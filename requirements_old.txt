@@ -42,4 +42,4 @@ six==1.17.0
 urllib3==2.8.0
 Werkzeug==3.1.9
 AMQPStorm==2.11.1
-amqpstorm-flask==0.6.0-dev
+amqpstorm-flask==0.7.1
